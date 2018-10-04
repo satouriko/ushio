@@ -1,0 +1,53 @@
+{
+  "name": "ushio",
+  "version": "1.0.0",
+  "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run serve",
+    "release:major": "npm version major && npm publish && git push --follow-tags",
+    "release:minor": "npm version minor && npm publish && git push --follow-tags",
+    "release:patch": "npm version patch && npm publish && git push --follow-tags",
+    "serve": "webpack-dev-server --mode=development --config=webpack.config.js --progress",
+    "build": "webpack --mode=production --progress",
+    "demo:build": "rm -rf demo/public && webpack --mode=production --config=cfg/demo.js --progress",
+    "lint": "tslint --fix -c tslint.json --project ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rikakomoe/ushio.git"
+  },
+  "author": "rikakomoe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rikakomoe/ushio/issues"
+  },
+  "homepage": "https://github.com/rikakomoe/ushio#readme",
+  "devDependencies": {
+    "@types/react": "^16.4.14",
+    "@types/react-dom": "^16.0.8",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.5",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "css-loader": "^1.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "style-loader": "^0.23.0",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.2",
+    "ts-loader": "^5.2.1",
+    "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.15.0",
+    "tslint-loader": "^3.6.0",
+    "tslint-react": "^3.6.0",
+    "typescript": "^3.1.1",
+    "webpack": "^4.20.2",
+    "webpack-bundle-analyzer": "^3.0.2",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.9"
+  }
+}
