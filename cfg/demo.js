@@ -6,7 +6,6 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 let baseConfig = require('./base');
 let defaultSettings = require('./defaults');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const config = Object.assign({}, baseConfig, {
   entry: path.join(__dirname, '../demo/src/index.js'),

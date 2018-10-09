@@ -2,7 +2,7 @@
   "name": "ushio",
   "version": "1.0.0",
   "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
-  "main": "src/index.js",
+  "main": "src/index.tsx",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run serve",
@@ -31,6 +31,7 @@
     "babel-loader": "^7.1.5",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^1.0.0",
     "html-webpack-plugin": "^3.2.0",

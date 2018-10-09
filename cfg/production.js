@@ -8,7 +8,7 @@ let defaultSettings = require('./defaults');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const config = Object.assign({}, baseConfig, {
-  entry: path.join(__dirname, '../src/index.js'),
+  entry: path.join(__dirname, '../src/index.tsx'),
   cache: false,
   devtool: 'sourcemap',
   plugins: [

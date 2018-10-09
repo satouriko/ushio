@@ -10,6 +10,8 @@
     ]
   },
   "rules": {
+    "interface-name": false,
+    "jsx-no-lambda": false,
     "curly": [
       true,
       "ignore-same-line"
@@ -129,6 +131,7 @@
     ]
   },
   "jsRules": {
+    "jsx-no-lambda": false,
     "curly": [
       true,
       "ignore-same-line"

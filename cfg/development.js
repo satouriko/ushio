@@ -12,7 +12,7 @@ const config = Object.assign({}, baseConfig, {
   entry: [
     'webpack-dev-server/client?http://127.0.0.1:' + defaultSettings.port,
     'webpack/hot/only-dev-server',
-    './demo/src/index.js'
+    path.join(__dirname, '../demo/src/index.js')
   ],
   cache: true,
   devtool: 'eval-source-map',

@@ -10,11 +10,9 @@
     "experimentalDecorators": true,
     "allowJs": true
   },
-  "files": [
-    "./src/index.js"
-  ],
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "./demo/src/**/*"
   ],
   "exclude": [
     "node_modules"
