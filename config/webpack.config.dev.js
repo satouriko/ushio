@@ -3,19 +3,37 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const baseConfig = require('./base');
 const defaultSettings = require('./defaults');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 
-const config = Object.assign({}, baseConfig, {
+module.exports = {
+  devtool: 'eval-source-map',
   entry: [
     'webpack-dev-server/client?http://127.0.0.1:' + defaultSettings.port,
     'webpack/hot/only-dev-server',
-    path.join(__dirname, '../demo/src/index.js')
+    path.join(__dirname, '../demo/src/index.tsx')
   ],
   cache: true,
-  devtool: 'eval-source-map',
+  output: {
+    path: path.join(__dirname, '/../dist'),
+    filename: 'ushio.js',
+    library: 'Ushio',
+    libraryTarget: 'umd',
+    umdNamedDefine: true,
+    publicPath: defaultSettings.publicPath
+  },
+  devServer: {
+    contentBase: './src/',
+    historyApiFallback: true,
+    hot: true,
+    port: defaultSettings.port,
+    publicPath: defaultSettings.publicPath,
+    noInfo: false
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
+  },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin(),
@@ -30,6 +48,4 @@ const config = Object.assign({}, baseConfig, {
     }),
   ],
   module: defaultSettings.getDefaultModules()
-});
-
-module.exports = config;
+};

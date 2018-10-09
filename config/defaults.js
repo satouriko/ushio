@@ -7,7 +7,7 @@
 'use strict';
 
 const path = require('path');
-const srcPath = path.join(__dirname, '/../src');
+const srcPath = [path.join(__dirname, '/../src'), path.join(__dirname, '/../demo/src')];
 const dfltPort = 3000;
 
 /**

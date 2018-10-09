@@ -3,14 +3,24 @@
 const path = require('path');
 const webpack = require('webpack');
 
-let baseConfig = require('./base');
 let defaultSettings = require('./defaults');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-const config = Object.assign({}, baseConfig, {
+module.exports = {
+  devtool: 'sourcemap',
+  output: {
+    path: path.join(__dirname, '/../dist'),
+    filename: 'ushio.js',
+    library: 'Ushio',
+    libraryTarget: 'umd',
+    umdNamedDefine: true,
+    publicPath: defaultSettings.publicPath
+  },
   entry: path.join(__dirname, '../src/index.tsx'),
   cache: false,
-  devtool: 'sourcemap',
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
+  },
   plugins: [
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': '"production"'
@@ -29,6 +39,4 @@ const config = Object.assign({}, baseConfig, {
     })
   ],
   module: defaultSettings.getDefaultModules()
-});
-
-module.exports = config;
+};

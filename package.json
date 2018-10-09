@@ -9,9 +9,9 @@
     "release:major": "npm version major && npm publish && git push --follow-tags",
     "release:minor": "npm version minor && npm publish && git push --follow-tags",
     "release:patch": "npm version patch && npm publish && git push --follow-tags",
-    "serve": "webpack-dev-server --mode=development --config=webpack.config.js --progress",
-    "build": "webpack --mode=production --progress",
-    "demo:build": "rm -rf demo/public && webpack --mode=production --config=cfg/demo.js --progress",
+    "serve": "webpack-dev-server --mode=development --config=config/webpack.config.dev.js --progress",
+    "dist": "webpack --mode=production --config=config/webpack.config.dist.js --progress",
+    "build": "rm -rf demo/public && webpack --mode=production --config=config/webpack.config.prod.js  --progress",
     "lint": "tslint --fix -c tslint.json --project ./"
   },
   "repository": {
