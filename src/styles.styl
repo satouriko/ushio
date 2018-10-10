@@ -19,6 +19,7 @@
 
     video {
       width 100%
+      max-height 100%
     }
   }
 
@@ -77,7 +78,7 @@
                 overflow hidden
 
                 .bar-buffer {
-                  transform scaleX(1)
+                  transform scaleX(0)
                   background hsla(0,0%,100%,.3)
                   transition transform .2s,-webkit-transform .2s
                   position absolute
@@ -90,13 +91,13 @@
 
                 .bar-normal {
                   transform scaleX(0)
+                  transition transform .2s,-webkit-transform .2s
                   position absolute
                   transform-origin 0 0
                   top 0
                   bottom 0
                   left 0
                   right 0
-                  background #fff
                 }
 
               }
