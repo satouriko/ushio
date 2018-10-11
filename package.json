@@ -1,6 +1,6 @@
 {
   "name": "ushio",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
   "main": "src/index.tsx",
   "scripts": {
