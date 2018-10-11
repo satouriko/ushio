@@ -19,7 +19,9 @@ class App extends Component<{}, {src: string}> {
     return (
       <div className="landing">
         <h1>Ushio Player</h1>
-        <h3>🍭 Ushio is a lovely HTML5 video player with double-track SRT subtitle support.</h3>
+        <h3>🍭 <ruby>
+          汐<rp>（</rp><rt>Ushio</rt><rp>）</rp>
+        </ruby> is a lovely HTML5 video player with double-track SRT subtitle support.</h3>
         <UshioPlayer
           src={this.state.src}
           style={{

@@ -82,14 +82,39 @@ class UshioPlayer extends Component<UshioPlayerProps, UshioPlayerStates> {
   private updateVideoState = () => {
     this.setState({
       currentTime: this.video.current.currentTime,
-      bufferedTime: this.video.current.readyState === 4 ? this.video.current.buffered.end(this.video.current.buffered.length - 1) : 0,
+      bufferedTime: this.getBufferedTime(this.video.current),
       duration: this.video.current.duration,
       paused: this.video.current.paused,
     });
   }
 
+  private getBufferedTime = (target: HTMLVideoElement): number => {
+    if (target.readyState !== 4) return 0;
+    const cur = target.currentTime;
+    for (let i = 0; i < target.buffered.length; i++) {
+      if (this.video.current.buffered.end(i) > cur) return this.video.current.buffered.end(i);
+    }
+    return cur;
+  }
+
   private changeVideoPlayingState = () => {
     if (this.state.paused) this.video.current.play(); else this.video.current.pause();
+  }
+
+  private changeCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
+    this.video.current.currentTime = (e.clientX - this.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.state.duration;
+  }
+
+  private getElementLeft = (element: HTMLElement) => {
+    let actualLeft = element.offsetLeft;
+    let current = element.offsetParent;
+
+    while (current !== null) {
+      actualLeft += (current as HTMLElement).offsetLeft;
+      current = (current as HTMLElement).offsetParent;
+    }
+
+    return actualLeft;
   }
 
   public render() {
@@ -116,7 +141,7 @@ class UshioPlayer extends Component<UshioPlayerProps, UshioPlayerStates> {
           <div className="ushio-player-video-control">
             <div className="video-control-top">
               <div className="video-progress">
-                <div className="video-progress-slider">
+                <div className="video-progress-slider" onClick={this.changeCurrentTime}>
                   <div className="slider-track">
                     <div className="slider-track-bar-wrap">
                       <div className="bar-buffer"
