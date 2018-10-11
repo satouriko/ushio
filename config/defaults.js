@@ -110,7 +110,11 @@ function getDefaultModules() {
         }
       },
       {
-        test: /\.(mp4|ogg|svg)$/,
+        test: /\.svg/,
+        loader: 'raw-loader',
+      },
+      {
+        test: /\.(mp4|ogg)$/,
         loader: 'file-loader'
       }
     ]

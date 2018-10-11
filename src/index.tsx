@@ -1,8 +1,11 @@
 import * as React from 'react';
-import { Component, CSSProperties, HTMLAttributes, StyleHTMLAttributes, SyntheticEvent } from 'react';
+import { Component, CSSProperties, SyntheticEvent } from 'react';
 
 import './styles.styl';
 import './theme.styl';
+
+import * as pauseIcon from './icons/pause.svg';
+import * as playIcon from './icons/play.svg';
 
 interface UshioPlayerStyle {
   progressColor?: string;
@@ -25,18 +28,23 @@ interface UshioPlayerStates {
   duration: number;
   playerStyle: UshioPlayerStyle;
   style: CSSProperties;
+  paused: boolean;
 }
 
 class UshioPlayer extends Component<UshioPlayerProps, UshioPlayerStates> {
 
+  public video: React.RefObject<HTMLVideoElement>;
+
   constructor(props: UshioPlayerProps) {
     super(props);
+    this.video = React.createRef();
     this.state = {
       currentTime: 0,
       bufferedTime: 0,
       duration: 0,
       playerStyle: Object.assign({}, defaultStyle, props.playerStyle),
       style: Object.assign({}, props.style),
+      paused: true,
     };
   }
 
@@ -48,31 +56,62 @@ class UshioPlayer extends Component<UshioPlayerProps, UshioPlayerStates> {
     return this.state.currentTime / this.state.duration;
   }
 
-  private updateVideoState = (target: HTMLVideoElement) => {
+  get currentTime(): string {
+    return this.formatDuration(this.state.currentTime);
+  }
+
+  get duration(): string {
+    return this.formatDuration(this.state.duration);
+  }
+
+  get videoPlayingState(): string {
+    return this.state.paused ? 'video-state-pause' : 'video-state-play';
+  }
+
+  private formatDuration = (duration: number): string => {
+    const h = Math.floor(duration / 3600);
+    const m = Math.floor(duration % 3600 / 60);
+    const s = Math.floor(duration % 60);
+    let str = '';
+    if (h && h < 10) str += `0${h}:`; else if (h) str += `${h}:`;
+    if (m < 10) str += `0${m}:`; else str += `${m}:`;
+    if (s < 10) str += `0${s}`; else str += `${s}`;
+    return str;
+}
+
+  private updateVideoState = () => {
     this.setState({
-      currentTime: target.currentTime,
-      bufferedTime: target.readyState === 4 ? target.buffered.end(target.buffered.length - 1) : 0,
-      duration: target.duration,
+      currentTime: this.video.current.currentTime,
+      bufferedTime: this.video.current.readyState === 4 ? this.video.current.buffered.end(this.video.current.buffered.length - 1) : 0,
+      duration: this.video.current.duration,
+      paused: this.video.current.paused,
     });
+  }
+
+  private changeVideoPlayingState = () => {
+    if (this.state.paused) this.video.current.play(); else this.video.current.pause();
   }
 
   public render() {
     return (
-      <div className="ushio-player" style={this.state.style}>
-        <div className="ushio-player-video">
+      <div className="ushio-player mouse-hover" style={this.state.style}>
+        <div className="ushio-player-video" onClick={this.changeVideoPlayingState}>
           <video
-            autoPlay={true}
+            ref={this.video}
             playsInline={true}
             src={this.props.src}
             poster={this.props.poster}
             preload="metadata"
-            onTimeUpdate={(e: SyntheticEvent<HTMLVideoElement>) => this.updateVideoState(e.currentTarget)}
-            onLoadedMetadata={(e: SyntheticEvent<HTMLVideoElement>) => this.updateVideoState(e.currentTarget)}
-            onProgress={(e: SyntheticEvent<HTMLVideoElement>) => this.updateVideoState(e.currentTarget)}
+            onTimeUpdate={this.updateVideoState}
+            onLoadedMetadata={this.updateVideoState}
+            onProgress={this.updateVideoState}
+            onPause={this.updateVideoState}
+            onPlay={this.updateVideoState}
               >
             Your browser is too old which doesn't support HTML5 video.
           </video>
         </div>
+        <div className="ushio-player-video-control-mask" />
         <div className="ushio-player-video-control-wrap">
           <div className="ushio-player-video-control">
             <div className="video-control-top">
@@ -95,6 +134,23 @@ class UshioPlayer extends Component<UshioPlayerProps, UshioPlayerStates> {
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="video-control-bottom">
+              <div className="video-control-bottom-left">
+                <div className={`ushio-player-btn btn-start ${this.videoPlayingState}`}
+                     onClick={this.changeVideoPlayingState}
+                >
+                  <span className="ushio-player-icon icon-play" dangerouslySetInnerHTML={{__html: playIcon as string}} />
+                  <span className="ushio-player-icon icon-pause" dangerouslySetInnerHTML={{__html: pauseIcon as string}} />
+                </div>
+                <div className="video-time-wrap">
+                  <span className="video-time-now">{this.currentTime}</span>
+                  <span className="video-time-divider">/</span>
+                  <span className="video-time-total">{this.duration}</span>
+                </div>
+              </div>
+              <div className="video-control-bottom-center" />
+              <div className="video-control-bottom-right" />
             </div>
           </div>
         </div>
