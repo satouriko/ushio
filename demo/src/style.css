@@ -53,3 +53,8 @@ button {
   border-radius: 10px;
 }
 
+.caption.ushio-player-subtitle-wrap {
+  top: 15px;
+  bottom: auto;
+}
+

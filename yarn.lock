@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@sindresorhus/to-milliseconds@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@sindresorhus/to-milliseconds/-/to-milliseconds-1.0.0.tgz#982eccb482004f5209215f99d26d6f27927714b1"
+  integrity sha512-TbPyv1MQSIJafkHdD6tJOl3J1QwU61iHNyUIOa41GPn8698WW6QgmY35DGASUHei3HTIuoN8ZSXjlTeWfaq5SA==
+
 "@types/node@*":
   version "10.11.4"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.11.4.tgz#e8bd933c3f78795d580ae41d86590bfc1f4f389d"
@@ -1419,6 +1424,11 @@ commander@~2.13.0:
   version "2.13.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.13.0.tgz#6964bca67685df7c1f1430c584f07d7597885b9c"
   integrity sha512-MVuS359B+YzaWqjCL/c+22gfryv+mCBPHAv3zyVI2GN8EY6IRP8VwtasXn8jyyhvvq84R4ImN1OKRtcbIasjYA==
+
+common-tags@^1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/common-tags/-/common-tags-1.8.0.tgz#8e3153e542d4a39e9b10554434afaaf98956a937"
+  integrity sha512-6P6g0uetGpW/sdyUy/iQQCbFF0kWVMSIVSyYz7Zgjcgh8mgw8PQzDNZeyZ5DQ2gM7LBoZPHmnjz8rUthkBG5tw==
 
 commondir@^1.0.1:
   version "1.0.1"
@@ -3733,6 +3743,11 @@ parse-asn1@^5.0.0:
     evp_bytestokey "^1.0.0"
     pbkdf2 "^3.0.3"
 
+parse-ms@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/parse-ms/-/parse-ms-2.0.0.tgz#7b3640295100caf3fa0100ccceb56635b62f9d62"
+  integrity sha512-AddiXFSLLCqj+tCRJ9MrUtHZB4DWojO3tk0NVZ+g5MaMQHF2+p2ktqxuoXyPFLljz/aUK0Nfhd/uGWnhXVXEyA==
+
 parseurl@~1.3.2:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/parseurl/-/parseurl-1.3.2.tgz#fc289d4ed8993119460c156253262cdc8de65bf3"
@@ -4730,6 +4745,15 @@ stylus@^0.54.5:
     mkdirp "0.5.x"
     sax "0.5.x"
     source-map "0.1.x"
+
+subtitle-utils@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/subtitle-utils/-/subtitle-utils-1.2.1.tgz#7d67556363bc9314e61b6c93ea8f7db906ce7750"
+  integrity sha512-Ik68WXddf4GdDYvRRwTvQ0KZSTz4jk9l4ODfmmi+/BpaTp0WfShIWvc9G9OMeHe59bU0rQ7Cgo4few8AtuZdJQ==
+  dependencies:
+    "@sindresorhus/to-milliseconds" "^1.0.0"
+    common-tags "^1.8.0"
+    parse-ms "^2.0.0"
 
 supports-color@^2.0.0:
   version "2.0.0"
