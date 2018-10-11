@@ -10,6 +10,7 @@ export interface SubtitleProps {
   type?: string;
   style?: CSSProperties;
   className?: string;
+  _isUshioSubtitleElement?: true;
 }
 
 export interface SubtitlePropsInternal extends SubtitleProps {
@@ -24,6 +25,10 @@ interface SubtitleStates {
 }
 
 export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
+
+  public static defaultProps: SubtitleProps = {
+    _isUshioSubtitleElement: true,
+  };
 
   constructor(props: SubtitlePropsInternal) {
     super(props);

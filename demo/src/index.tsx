@@ -40,7 +40,7 @@ class App extends Component<{}, Video> {
         <h3>🍭 <ruby>
           汐<rp>（</rp><rt>Ushio</rt><rp>）</rp>
         </ruby> is a lovely HTML5 video player with multi-track SRT/VTT subtitle support.</h3>
-        <UshioPlayer
+        <UshioPlayer autoPlay={true}
           src={this.state.src}
           style={{
             width: '850px',

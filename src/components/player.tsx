@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Component, CSSProperties, MouseEvent, RefObject } from 'react';
+import { Component, CSSProperties, RefObject } from 'react';
 
 import * as pauseIcon from '../icons/pause.svg';
 import * as playIcon from '../icons/play.svg';
@@ -22,6 +22,7 @@ export interface PlayerProps {
   playerStyle?: PlayerStyle;
   style?: CSSProperties;
   className?: string;
+  autoPlay?: boolean;
 }
 
 interface PlayerStates {
@@ -31,15 +32,20 @@ interface PlayerStates {
   playerStyle: PlayerStyle;
   style: CSSProperties;
   paused: boolean;
+  hover: boolean;
+  noCursor: boolean;
 }
 
 export class Player extends Component<PlayerProps, PlayerStates> {
 
-  public video: RefObject<HTMLVideoElement>;
+  private video: RefObject<HTMLVideoElement>;
+  private videoControl: RefObject<HTMLDivElement>;
+  private hoverTimer: number = 0;
 
   constructor(props: PlayerProps) {
     super(props);
     this.video = React.createRef();
+    this.videoControl = React.createRef();
     this.state = {
       currentTime: 0,
       bufferedTime: 0,
@@ -47,6 +53,8 @@ export class Player extends Component<PlayerProps, PlayerStates> {
       playerStyle: Object.assign({}, defaultStyle, props.playerStyle),
       style: Object.assign({}, props.style),
       paused: true,
+      hover: false,
+      noCursor: false,
     };
   }
 
@@ -68,6 +76,23 @@ export class Player extends Component<PlayerProps, PlayerStates> {
 
   get videoPlayingState(): string {
     return this.state.paused ? 'video-state-pause' : 'video-state-play';
+  }
+
+  get mouseHover(): string {
+    return this.state.hover ? 'mouse-hover' : '';
+  }
+
+  get noCursor(): string {
+    return this.state.noCursor ? 'no-cursor' : '';
+}
+
+  public componentDidMount() {
+    onmousemove = this.onMouseMove;
+  }
+
+  public componentWillUnmount() {
+    clearTimeout(this.hoverTimer);
+    onmousemove = null;
   }
 
   private formatDuration = (duration: number): string => {
@@ -99,32 +124,61 @@ export class Player extends Component<PlayerProps, PlayerStates> {
     return cur;
   }
 
+  private onMouseMove = (e: MouseEvent) => {
+    if (!this.video.current || !this.videoControl.current) return;
+    const left = Player.getElementLeft(this.video.current);
+    const top = Player.getElementTop(this.video.current);
+    if (e.clientX > left &&
+      e.clientX < left + this.video.current.offsetWidth &&
+      e.clientY > top &&
+      e.clientY < top + this.video.current.offsetHeight
+    ) {
+      this.setState({ hover: true, noCursor: false }, () => {
+        clearTimeout(this.hoverTimer);
+        if (e.clientY < Player.getElementTop(this.videoControl.current)) {
+          this.hoverTimer = window.setTimeout(() => {
+            this.setState({ hover: false, noCursor: true });
+          }, 3000);
+        }
+      });
+    } else {
+      this.setState({ hover: false });
+    }
+  }
+
   private changeVideoPlayingState = () => {
     if (this.state.paused) this.video.current.play(); else this.video.current.pause();
   }
-
-  private changeCurrentTime = (e: MouseEvent<HTMLDivElement>) => {
-    const currentTime = (e.clientX - this.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.state.duration;
+  private changeCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
+    const currentTime = (e.clientX - Player.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.state.duration;
     this.video.current.currentTime = currentTime;
     this.setState({ currentTime });
   }
 
-  private getElementLeft = (element: HTMLElement) => {
+  private static getElementLeft = (element: HTMLElement) => {
     let actualLeft = element.offsetLeft;
     let current = element.offsetParent;
-
     while (current !== null) {
       actualLeft += (current as HTMLElement).offsetLeft;
       current = (current as HTMLElement).offsetParent;
     }
-
     return actualLeft;
+  }
+
+  private static getElementTop = (element: HTMLElement) => {
+    let actualTop = element.offsetTop;
+    let current = element.offsetParent;
+    while (current !== null) {
+      actualTop += (current as HTMLElement).offsetTop;
+      current = (current as HTMLElement).offsetParent;
+    }
+    return actualTop;
   }
 
   public render() {
     return (
-      <div className={`ushio-player mouse-hover ${this.props.className || ''}`} style={this.state.style}>
-        <div className="ushio-player-video-mask" onClick={this.changeVideoPlayingState} />
+      <div className={`ushio-player ${this.mouseHover} ${this.props.className || ''}`} style={this.state.style}>
+        <div className={`ushio-player-video-mask ${this.noCursor}`} onClick={this.changeVideoPlayingState} />
         <div className="ushio-player-video">
           <video
             ref={this.video}
@@ -132,6 +186,7 @@ export class Player extends Component<PlayerProps, PlayerStates> {
             src={this.props.src}
             poster={this.props.poster}
             preload="metadata"
+            autoPlay={this.props.autoPlay}
             onTimeUpdate={this.updateVideoState}
             onLoadedMetadata={this.updateVideoState}
             onProgress={this.updateVideoState}
@@ -142,13 +197,17 @@ export class Player extends Component<PlayerProps, PlayerStates> {
           </video>
         </div>
         {
-          React.Children.map(this.props.children, (child: React.ReactElement<SubtitlePropsInternal>) =>
-            React.cloneElement(child, {
-              currentTime: this.state.currentTime,
-            }))
+          React.Children.map(this.props.children, (child: React.ReactElement<SubtitlePropsInternal>) => {
+            if (child.props._isUshioSubtitleElement) {
+              return React.cloneElement(child, {
+                currentTime: this.state.currentTime,
+              });
+            } else return child;
+          })
         }
+
         <div className="ushio-player-video-control-mask" />
-        <div className="ushio-player-video-control-wrap">
+        <div className="ushio-player-video-control-wrap" ref={this.videoControl}>
           <div className="ushio-player-video-control">
             <div className="video-control-top">
               <div className="video-progress">
