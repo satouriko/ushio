@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { render } from 'react-dom';
+import { render, unmountComponentAtNode } from 'react-dom';
 
 import { Player, PlayerStyle } from './components/Player';
 import { PlayerInstanceModel, PlayerInstanceProps } from './models/PlayerInstanceModel';
@@ -15,7 +15,7 @@ export { Subtitle as UshioSubtitle } from './components/Subtitle';
 export class UshioPlayer {
   public component: React.ReactElement<Player>;
   public ref: Element;
-  public id: string | number;
+  public id: string;
   private store: PlayerModel;
 
   constructor(init: any) {
@@ -28,6 +28,12 @@ export class UshioPlayer {
   public reload(props: PlayerProps) {
     this.store.reload(props);
   }
+
+  public destroy() {
+    const parent = document.getElementById(this.id).parentElement;
+    if (parent) unmountComponentAtNode(parent);
+  }
+
 }
 
 export class Ushio {
@@ -36,6 +42,7 @@ export class Ushio {
 
   constructor(props?: PlayerInstanceProps) {
     this.store = new PlayerInstanceModel();
+    if (!props.preload) props.preload = 'metadata';
     this.reload(props);
   }
 
@@ -54,7 +61,7 @@ export class Ushio {
     playerStore.playerStyle = defaultStyle;
     playerStore.reload(props);
 
-    const Component = <Player playerInstanceStore={this.store} playerStore={playerStore} />;
+    const Component = <Player playerInstanceStore={this.store} playerStore={playerStore} id={playerID} />;
 
     const player: UshioPlayer = new UshioPlayer({
       component: Component,

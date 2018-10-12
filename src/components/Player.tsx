@@ -18,6 +18,7 @@ export interface PlayerStyle {
 export interface PlayerPropsInternal {
   playerInstanceStore: PlayerInstanceModel;
   playerStore: PlayerModel;
+  id: string;
 }
 
 interface PlayerStates {
@@ -71,12 +72,13 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
   }
 
   public componentDidMount() {
-    onmousemove = this.onMouseMove;
+    this.updateVideoState();
+    addEventListener('mousemove', this.onMouseMove);
   }
 
   public componentWillUnmount() {
     clearTimeout(this.hoverTimer);
-    onmousemove = null;
+    removeEventListener('mousemove', this.onMouseMove);
   }
 
   private formatDuration = (duration: number): string => {
@@ -108,16 +110,15 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
 
   private onMouseMove = (e: MouseEvent) => {
     if (!this.video.current || !this.videoControl.current) return;
-    const left = Player.getElementLeft(this.video.current);
-    const top = Player.getElementTop(this.video.current);
-    if (e.clientX > left &&
-      e.clientX < left + this.video.current.offsetWidth &&
-      e.clientY > top &&
-      e.clientY < top + this.video.current.offsetHeight
+    const rect = this.video.current.getBoundingClientRect();
+    if (e.clientX > rect.left &&
+      e.clientX < rect.right &&
+      e.clientY > rect.top &&
+      e.clientY < rect.bottom
     ) {
       this.setState({ hover: true, noCursor: false }, () => {
         clearTimeout(this.hoverTimer);
-        if (e.clientY < Player.getElementTop(this.videoControl.current)) {
+        if (e.clientY < this.videoControl.current.getBoundingClientRect().top) {
           this.hoverTimer = window.setTimeout(() => {
             this.setState({ hover: false, noCursor: true });
           }, 3000);
@@ -132,34 +133,15 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
     if (this.props.playerInstanceStore.paused) this.video.current.play(); else this.video.current.pause();
   }
   private changeCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
-    const currentTime = (e.clientX - Player.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.props.playerInstanceStore.duration;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const currentTime = (e.clientX - rect.left) / rect.width * this.props.playerInstanceStore.duration;
     this.video.current.currentTime = currentTime;
     this.props.playerInstanceStore.currentTime = currentTime;
   }
 
-  private static getElementLeft = (element: HTMLElement) => {
-    let actualLeft = element.offsetLeft;
-    let current = element.offsetParent;
-    while (current !== null) {
-      actualLeft += (current as HTMLElement).offsetLeft;
-      current = (current as HTMLElement).offsetParent;
-    }
-    return actualLeft;
-  }
-
-  private static getElementTop = (element: HTMLElement) => {
-    let actualTop = element.offsetTop;
-    let current = element.offsetParent;
-    while (current !== null) {
-      actualTop += (current as HTMLElement).offsetTop;
-      current = (current as HTMLElement).offsetParent;
-    }
-    return actualTop;
-  }
-
   public render() {
     return (
-      <div className={`ushio-player ${this.mouseHover} ${this.props.playerStore.className || ''}`} style={{...this.props.playerStore.style}}>
+      <div id={this.props.id} className={`ushio-player ${this.mouseHover} ${this.props.playerStore.className || ''}`} style={{...this.props.playerStore.style}}>
         <div className={`ushio-player-video-mask ${this.noCursor}`} onClick={this.changeVideoPlayingState} />
         <div className="ushio-player-video">
           <video
@@ -167,7 +149,7 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
             playsInline={true}
             src={this.props.playerInstanceStore.src}
             poster={this.props.playerInstanceStore.poster}
-            preload="metadata"
+            preload={this.props.playerInstanceStore.preload}
             autoPlay={this.props.playerInstanceStore.autoPlay}
             onTimeUpdate={this.updateVideoState}
             onLoadedMetadata={this.updateVideoState}
@@ -180,6 +162,7 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
         </div>
         <div className="ushio-player-custom-mask" dangerouslySetInnerHTML={{ __html: this.props.playerStore.innerHTML }} />
         {
+          this.props.playerInstanceStore.subtitles &&
           this.props.playerInstanceStore.subtitles.map((subtitle, index) => (
             React.cloneElement(<Subtitle key={index} {...subtitle} />, {
               currentTime: this.props.playerInstanceStore.currentTime,
