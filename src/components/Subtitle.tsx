@@ -29,6 +29,7 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
   public static defaultProps: SubtitleProps = {
     _isUshioSubtitleElement: true,
   };
+  private loading: boolean = false;
 
   constructor(props: SubtitlePropsInternal) {
     super(props);
@@ -41,14 +42,16 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
   }
 
   public async componentDidMount() {
+    this.loading = true;
     const subtitle = await Subtitle.initSubtitle(this.props);
-    this.setState({ subtitle });
+    this.setState({ subtitle }, () => this.loading = false);
   }
 
   public async componentDidUpdate(prevProps: SubtitlePropsInternal, prevState: SubtitleStates) {
-    if (this.state.subtitle === null) {
+    if (this.state.subtitle === null && !this.loading) {
+      this.loading = true;
       const subtitle = await Subtitle.initSubtitle(this.props);
-      this.setState({ subtitle });
+      this.setState({ subtitle }, () => this.loading = false);
     }
   }
 
