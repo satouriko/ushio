@@ -121,8 +121,19 @@ function getDefaultModules() {
   };
 }
 
+/**
+ * Get the default resolves object for webpack
+ * @return {Object}
+ */
+function getDefaultResolves() {
+  return {
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+  }
+}
+
 module.exports = {
   publicPath: '/',
   port: dfltPort,
-  getDefaultModules: getDefaultModules
+  getDefaultModules: getDefaultModules,
+  getDefaultResolves: getDefaultResolves
 };

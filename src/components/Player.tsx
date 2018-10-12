@@ -1,81 +1,65 @@
+import { observer } from 'mobx-react';
 import * as React from 'react';
 import { Component, CSSProperties, RefObject } from 'react';
 
 import * as pauseIcon from '../icons/pause.svg';
 import * as playIcon from '../icons/play.svg';
+import { PlayerInstanceModel } from '../models/PlayerInstanceModel';
+import { PlayerModel } from '../models/PlayerModel';
 import '../stylesheets/player.styl';
 import '../stylesheets/theme.styl';
 
-import { SubtitlePropsInternal } from './subtitle';
+import { Subtitle, SubtitleProps, SubtitlePropsInternal } from './Subtitle';
 
 export interface PlayerStyle {
   progressColor?: string;
 }
 
-const defaultStyle: PlayerStyle = {
-  progressColor: '#00a1d6',
-};
-
-export interface PlayerProps {
-  src?: string;
-  poster?: string;
-  playerStyle?: PlayerStyle;
-  style?: CSSProperties;
-  className?: string;
-  autoPlay?: boolean;
+export interface PlayerPropsInternal {
+  playerInstanceStore: PlayerInstanceModel;
+  playerStore: PlayerModel;
 }
 
 interface PlayerStates {
-  currentTime: number;
-  bufferedTime: number;
-  duration: number;
-  playerStyle: PlayerStyle;
-  style: CSSProperties;
-  paused: boolean;
   hover: boolean;
   noCursor: boolean;
 }
 
-export class Player extends Component<PlayerProps, PlayerStates> {
+@observer
+export class Player extends Component<PlayerPropsInternal, PlayerStates> {
 
   private video: RefObject<HTMLVideoElement>;
   private videoControl: RefObject<HTMLDivElement>;
   private hoverTimer: number = 0;
 
-  constructor(props: PlayerProps) {
+  constructor(props: PlayerPropsInternal) {
     super(props);
     this.video = React.createRef();
     this.videoControl = React.createRef();
     this.state = {
-      currentTime: 0,
-      bufferedTime: 0,
-      duration: 0,
-      playerStyle: Object.assign({}, defaultStyle, props.playerStyle),
-      style: Object.assign({}, props.style),
-      paused: true,
       hover: false,
       noCursor: false,
     };
   }
 
   get bufferProgress(): number {
-    return this.state.bufferedTime / this.state.duration;
+    return this.props.playerInstanceStore.bufferedTime / this.props.playerInstanceStore.duration;
   }
 
   get playProgress(): number {
-    return this.state.currentTime / this.state.duration;
+    return this.props.playerInstanceStore.currentTime / this.props.playerInstanceStore.duration;
   }
 
   get currentTime(): string {
-    return this.formatDuration(this.state.currentTime);
+    return this.formatDuration(this.props.playerInstanceStore.currentTime);
   }
 
   get duration(): string {
-    return this.formatDuration(this.state.duration);
+    return this.formatDuration(this.props.playerInstanceStore.duration);
   }
 
   get videoPlayingState(): string {
-    return this.state.paused ? 'video-state-pause' : 'video-state-play';
+    return this.props.playerInstanceStore.paused ? 'video-state-pause' : 'video-state-play';
   }
 
   get mouseHover(): string {
@@ -84,7 +68,7 @@ export class Player extends Component<PlayerProps, PlayerStates> {
 
   get noCursor(): string {
     return this.state.noCursor ? 'no-cursor' : '';
-}
+  }
 
   public componentDidMount() {
     onmousemove = this.onMouseMove;
@@ -107,12 +91,10 @@ export class Player extends Component<PlayerProps, PlayerStates> {
   }
 
   private updateVideoState = () => {
-    this.setState({
-      currentTime: this.video.current.currentTime,
-      bufferedTime: this.getBufferedTime(this.video.current),
-      duration: this.video.current.duration,
-      paused: this.video.current.paused,
-    });
+    this.props.playerInstanceStore.currentTime = this.video.current.currentTime;
+    this.props.playerInstanceStore.bufferedTime = this.getBufferedTime(this.video.current);
+    this.props.playerInstanceStore.duration = this.video.current.duration;
+    this.props.playerInstanceStore.paused = this.video.current.paused;
   }
 
   private getBufferedTime = (target: HTMLVideoElement): number => {
@@ -147,12 +129,12 @@ export class Player extends Component<PlayerProps, PlayerStates> {
   }
 
   private changeVideoPlayingState = () => {
-    if (this.state.paused) this.video.current.play(); else this.video.current.pause();
+    if (this.props.playerInstanceStore.paused) this.video.current.play(); else this.video.current.pause();
   }
   private changeCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
-    const currentTime = (e.clientX - Player.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.state.duration;
+    const currentTime = (e.clientX - Player.getElementLeft(e.currentTarget)) / e.currentTarget.clientWidth * this.props.playerInstanceStore.duration;
     this.video.current.currentTime = currentTime;
-    this.setState({ currentTime });
+    this.props.playerInstanceStore.currentTime = currentTime;
   }
 
   private static getElementLeft = (element: HTMLElement) => {
@@ -177,16 +159,16 @@ export class Player extends Component<PlayerProps, PlayerStates> {
 
   public render() {
     return (
-      <div className={`ushio-player ${this.mouseHover} ${this.props.className || ''}`} style={this.state.style}>
+      <div className={`ushio-player ${this.mouseHover} ${this.props.playerStore.className || ''}`} style={{...this.props.playerStore.style}}>
         <div className={`ushio-player-video-mask ${this.noCursor}`} onClick={this.changeVideoPlayingState} />
         <div className="ushio-player-video">
           <video
             ref={this.video}
             playsInline={true}
-            src={this.props.src}
-            poster={this.props.poster}
+            src={this.props.playerInstanceStore.src}
+            poster={this.props.playerInstanceStore.poster}
             preload="metadata"
-            autoPlay={this.props.autoPlay}
+            autoPlay={this.props.playerInstanceStore.autoPlay}
             onTimeUpdate={this.updateVideoState}
             onLoadedMetadata={this.updateVideoState}
             onProgress={this.updateVideoState}
@@ -196,11 +178,19 @@ export class Player extends Component<PlayerProps, PlayerStates> {
             Your browser is too old which doesn't support HTML5 video.
           </video>
         </div>
+        <div className="ushio-player-custom-mask" dangerouslySetInnerHTML={{ __html: this.props.playerStore.innerHTML }} />
+        {
+          this.props.playerInstanceStore.subtitles.map((subtitle, index) => (
+            React.cloneElement(<Subtitle key={index} {...subtitle} />, {
+              currentTime: this.props.playerInstanceStore.currentTime,
+            })
+          ))
+        }
         {
           React.Children.map(this.props.children, (child: React.ReactElement<SubtitlePropsInternal>) => {
             if (child.props._isUshioSubtitleElement) {
               return React.cloneElement(child, {
-                currentTime: this.state.currentTime,
+                currentTime: this.props.playerInstanceStore.currentTime,
               });
             } else return child;
           })
@@ -221,7 +211,7 @@ export class Player extends Component<PlayerProps, PlayerStates> {
                       />
                       <div className="bar-normal ushio-theme"
                            style={{
-                             background: this.state.playerStyle.progressColor,
+                             background: this.props.playerStore.playerStyle.progressColor,
                              transform: `scaleX(${this.playProgress})`,
                            }}
                       />

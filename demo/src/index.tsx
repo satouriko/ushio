@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Component } from 'react';
 import { render } from 'react-dom';
 
-import { UshioPlayer, UshioSubtitle } from '../../';
+import Ushio, { UshioProps } from '../../';
 
 import './style.css';
 
@@ -26,34 +26,45 @@ const videos: Video[] = [
   },
 ];
 
-class App extends Component<{}, Video> {
+const getVideo = (id: number): UshioProps =>
+  ({
+    autoPlay: true,
+    src: videos[id].src,
+    subtitles: [{
+      src: videos[id].subtitle,
+      type: 'srt',
+    }, {
+      src: videos[id].caption,
+      type: 'srt',
+      className: 'caption',
+    }],
+  });
 
-  constructor(props: {}) {
-    super(props);
-    this.state = videos[0];
-  }
+class App extends Component {
+
+  public player = new Ushio(getVideo(0));
+  public playerElem = this.player.render({
+    style: {
+      width: '850px',
+      height: '478px',
+    },
+  });
 
   public render() {
+
     return (
       <div className="landing">
         <h1>Ushio Player</h1>
         <h3>🍭 <ruby>
           汐<rp>（</rp><rt>Ushio</rt><rp>）</rp>
         </ruby> is a lovely HTML5 video player with multi-track SRT/VTT subtitle support.</h3>
-        <UshioPlayer autoPlay={true}
-          src={this.state.src}
-          style={{
-            width: '850px',
-            height: '478px',
-          }}
-        >
-          <UshioSubtitle type="srt" src={this.state.subtitle} />
-          <UshioSubtitle type="srt" src={this.state.caption} className="caption" />
-        </UshioPlayer>
+        {
+          this.playerElem.component
+        }
         <p>
-          <button onClick={() => this.setState(videos[0])}>ときめきポポロン♪ </button>
-          <button onClick={() => this.setState(videos[1])}>ひだまりデイズ</button>
-          <button onClick={() => this.setState(videos[2])}>夜空はなんでも知ってるの?</button>
+          <button onClick={() => this.player.reload(getVideo(0))}>ときめきポポロン♪ </button>
+          <button onClick={() => this.player.reload(getVideo(1))}>ひだまりデイズ</button>
+          <button onClick={() => this.player.reload(getVideo(2))}>夜空はなんでも知ってるの?</button>
         </p>
       </div>
     );

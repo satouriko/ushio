@@ -31,9 +31,7 @@ module.exports = {
     publicPath: defaultSettings.publicPath,
     noInfo: false
   },
-  resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx']
-  },
+  resolve: defaultSettings.getDefaultResolves(),
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin(),
