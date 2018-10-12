@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Component } from 'react';
 import { render } from 'react-dom';
 
-import Ushio, { UshioProps } from '../../';
+import Ushio, { UshioProps } from '../../src';
 
 import './style.css';
 

@@ -11,7 +11,7 @@ Ushio is a lovely HTML5 video player with multi-track SRT/VTT subtitle support.
 ### Use via CDN
 
 ```html
-<script src="https://unpkg.com/ushio/dist/ushio.js"></script>
+<script src="https://unpkg.com/ushio@2"></script>
 ```
 
 ### Install via NPM

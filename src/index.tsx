@@ -5,7 +5,12 @@ import { Player, PlayerStyle } from './components/Player';
 import { PlayerInstanceModel, PlayerInstanceProps } from './models/PlayerInstanceModel';
 import { PlayerModel, PlayerProps } from './models/PlayerModel';
 
+// export type
 export { PlayerInstanceProps as UshioProps, PlayerProps as UshioPlayerProps, PlayerStyle as UshioPlayerStyle };
+
+// export React Component
+export { Player as UshioPlayerComponent, PlayerInstanceModel as UshioPlayerInstanceStore, PlayerModel as UshioPlayerStore };
+export { Subtitle as UshioSubtitle } from './components/Subtitle';
 
 export class UshioPlayer {
   public component: React.ReactElement<Player>;

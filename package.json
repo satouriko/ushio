@@ -2,7 +2,7 @@
   "name": "ushio",
   "version": "2.0.1",
   "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
-  "main": "src/index.tsx",
+  "main": "dist/ushio.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run serve",
