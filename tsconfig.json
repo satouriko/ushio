@@ -7,7 +7,6 @@
     "lib": ["es5", "es6", "es2015", "es7", "es2016", "es2017", "dom"],
     "jsx": "react",
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "declarationDir": "./"
   },

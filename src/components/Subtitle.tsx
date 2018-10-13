@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Component, CSSProperties } from 'react';
-import SubtitleUtils, { ISubtitle } from 'subtitle-utils';
+import * as SubtitleUtils from 'subtitle-utils';
+import { ISubtitle } from 'subtitle-utils';
 
 import '../stylesheets/subtitle.styl';
 
