@@ -25,8 +25,6 @@
   },
   "homepage": "https://github.com/rikakomoe/ushio#readme",
   "devDependencies": {
-    "@types/react": "^16.4.14",
-    "@types/react-dom": "^16.0.8",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
     "babel-polyfill": "^6.26.0",
@@ -44,7 +42,6 @@
     "style-loader": "^0.23.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
-    "subtitle-utils": "^1.2.1",
     "ts-loader": "^5.2.1",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
@@ -56,5 +53,10 @@
     "webpack-bundle-analyzer": "^3.0.2",
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.9"
+  },
+  "dependencies": {
+    "@types/react": "^16.4.14",
+    "@types/react-dom": "^16.0.8",
+    "subtitle-utils": "^1.2.1"
   }
 }

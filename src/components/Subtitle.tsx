@@ -48,7 +48,7 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
   }
 
   public async componentDidUpdate(prevProps: SubtitlePropsInternal, prevState: SubtitleStates) {
-    if (this.state.subtitle === null && !this.loading) {
+    if (this.state.subtitle === undefined && !this.loading) {
       this.loading = true;
       const subtitle = await Subtitle.initSubtitle(this.props);
       this.setState({ subtitle }, () => this.loading = false);
@@ -63,17 +63,22 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
     } else {
       text = props.value;
     }
-    switch (props.type.toLowerCase()) {
-      case 'srt':
-        return await SubtitleUtils.fromSRT(text);
-      default:
-        return await SubtitleUtils.fromVTT(text);
+    try {
+      switch (props.type.toLowerCase()) {
+        case 'srt':
+          return await SubtitleUtils.fromSRT(text);
+        default:
+          return await SubtitleUtils.fromVTT(text);
+      }
+    } catch (e) {
+      console.error(e);
+      return null;
     }
   }
 
   public static getDerivedStateFromProps(nextProps: SubtitlePropsInternal, prevState: SubtitleStates) {
     if (nextProps.src !== prevState.src || nextProps.value !== prevState.value) {
-      return { src: nextProps.src, value: nextProps.value, subtitle: null as SubtitleUtils };
+      return { src: nextProps.src, value: nextProps.value, subtitle: undefined as SubtitleUtils };
     }
     if (!prevState.subtitle) return null;
     const flyingSubtitles: ISubtitle[] = [];

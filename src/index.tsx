@@ -10,7 +10,7 @@ export { PlayerInstanceProps as UshioProps, PlayerProps as UshioPlayerProps, Pla
 
 // export React Component
 export { Player as UshioPlayerComponent, PlayerInstanceModel as UshioPlayerInstanceStore, PlayerModel as UshioPlayerStore };
-export { Subtitle as UshioSubtitle } from './components/Subtitle';
+export { Subtitle as UshioSubtitleComponent, SubtitleProps as UshioSubtitle } from './components/Subtitle';
 
 export class UshioPlayer {
   public component: React.ReactElement<Player>;
