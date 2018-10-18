@@ -161,7 +161,8 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
           </video>
         </div>
         <div className="ushio-player-custom-mask" dangerouslySetInnerHTML={{ __html: this.props.playerStore.innerHTML }} />
-        {
+        <div className="ushio-player-subtitle-container">
+          {
           this.props.playerInstanceStore.subtitles &&
           this.props.playerInstanceStore.subtitles.map((subtitle, index) => (
             React.cloneElement(<Subtitle key={index} {...subtitle} />, {
@@ -178,7 +179,7 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
             } else return child;
           })
         }
-
+        </div>
         <div className="ushio-player-video-control-mask" />
         <div className="ushio-player-video-control-wrap" ref={this.videoControl}>
           <div className="ushio-player-video-control">
