@@ -1,6 +1,6 @@
 {
   "name": "ushio",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
   "main": "dist/ushio.js",
   "scripts": {
