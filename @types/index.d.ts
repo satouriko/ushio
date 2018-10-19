@@ -17,13 +17,14 @@ export declare class UshioPlayer {
 }
 export declare class Ushio {
     readonly store: PlayerInstanceModel;
+    reload: (props: PlayerInstanceProps) => void;
+    play: () => void;
+    pause: () => void;
+    togglePlay: () => void;
+    setCurrentTime: (time: number) => void;
     constructor(props?: PlayerInstanceProps);
     private readonly events;
     render: (props?: PlayerProps, node?: Element) => UshioPlayer;
-    reload(props: PlayerInstanceProps): void;
-    play(): void;
-    pause(): void;
-    togglePlay(): void;
     on(event: string, func: (data?: any, reaction?: IReactionPublic) => void): IReactionDisposer;
 }
 export default Ushio;

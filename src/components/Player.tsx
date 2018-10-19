@@ -1,3 +1,4 @@
+import { reaction, IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
 import * as React from 'react';
 import { Component, RefObject } from 'react';
@@ -32,6 +33,8 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
   private video: RefObject<HTMLVideoElement>;
   private videoControl: RefObject<HTMLDivElement>;
   private hoverTimer: number = 0;
+  private playReactionDisposer: IReactionDisposer;
+  private currentTimeReactionDisposer: IReactionDisposer;
 
   constructor(props: PlayerPropsInternal) {
     super(props);
@@ -74,11 +77,23 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
   public componentDidMount() {
     this.updateVideoState();
     addEventListener('mousemove', this.onMouseMove);
+    this.playReactionDisposer = reaction(() => this.props.playerInstanceStore.paused,
+      () => {
+        if (!this.video.current) return;
+        if (this.props.playerInstanceStore.paused) this.video.current.pause();
+        else this.video.current.play();
+      });
+    this.currentTimeReactionDisposer = reaction(() => this.props.playerInstanceStore.currentTimeSetter,
+      () => {
+        this.video.current.currentTime = this.props.playerInstanceStore.currentTimeSetter;
+      });
   }
 
   public componentWillUnmount() {
     clearTimeout(this.hoverTimer);
     removeEventListener('mousemove', this.onMouseMove);
+    this.playReactionDisposer();
+    this.currentTimeReactionDisposer();
   }
 
   private formatDuration = (duration: number): string => {
@@ -116,33 +131,32 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
       e.clientY > rect.top &&
       e.clientY < rect.bottom
     ) {
-      this.setState({ hover: true, noCursor: false }, () => {
+      this.setState({hover: true, noCursor: false}, () => {
         clearTimeout(this.hoverTimer);
         if (e.clientY < this.videoControl.current.getBoundingClientRect().top) {
           this.hoverTimer = window.setTimeout(() => {
-            this.setState({ hover: false, noCursor: true });
+            this.setState({hover: false, noCursor: true});
           }, 3000);
         }
       });
     } else {
-      this.setState({ hover: false });
+      this.setState({hover: false});
     }
   }
 
-  private changeVideoPlayingState = () => {
-    if (this.props.playerInstanceStore.paused) this.video.current.play(); else this.video.current.pause();
-  }
-  private changeCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
+  private setCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const currentTime = (e.clientX - rect.left) / rect.width * this.props.playerInstanceStore.duration;
     this.video.current.currentTime = currentTime;
-    this.props.playerInstanceStore.currentTime = currentTime;
+    this.props.playerInstanceStore.setCurrentTime(currentTime);
   }
 
   public render() {
     return (
-      <div id={this.props.id} className={`ushio-player ${this.mouseHover} ${this.props.playerStore.className || ''}`} style={{...this.props.playerStore.style}}>
-        <div className={`ushio-player-video-mask ${this.noCursor}`} onClick={this.changeVideoPlayingState} />
+      <div id={this.props.id} className={`ushio-player ${this.mouseHover} ${this.props.playerStore.className || ''}`}
+           style={{...this.props.playerStore.style}}>
+        <div className={`ushio-player-video-mask ${this.noCursor}`}
+             onClick={this.props.playerInstanceStore.togglePlay}/>
         <div className="ushio-player-video">
           <video
             ref={this.video}
@@ -160,32 +174,32 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
             Your browser is too old which doesn't support HTML5 video.
           </video>
         </div>
-        <div className="ushio-player-custom-mask" dangerouslySetInnerHTML={{ __html: this.props.playerStore.innerHTML }} />
+        <div className="ushio-player-custom-mask" dangerouslySetInnerHTML={{__html: this.props.playerStore.innerHTML}}/>
         <div className="ushio-player-subtitle-container">
           {
-          this.props.playerInstanceStore.subtitles &&
-          this.props.playerInstanceStore.subtitles.map((subtitle, index) => (
-            React.cloneElement(<Subtitle key={index} {...subtitle} />, {
-              currentTime: this.props.playerInstanceStore.currentTime,
-            })
-          ))
-        }
-        {
-          React.Children.map(this.props.children, (child: React.ReactElement<SubtitlePropsInternal>) => {
-            if (child.props._isUshioSubtitleElement) {
-              return React.cloneElement(child, {
+            this.props.playerInstanceStore.subtitles &&
+            this.props.playerInstanceStore.subtitles.map((subtitle, index) => (
+              React.cloneElement(<Subtitle key={index} {...subtitle} />, {
                 currentTime: this.props.playerInstanceStore.currentTime,
-              });
-            } else return child;
-          })
-        }
+              })
+            ))
+          }
+          {
+            React.Children.map(this.props.children, (child: React.ReactElement<SubtitlePropsInternal>) => {
+              if (child.props._isUshioSubtitleElement) {
+                return React.cloneElement(child, {
+                  currentTime: this.props.playerInstanceStore.currentTime,
+                });
+              } else return child;
+            })
+          }
         </div>
-        <div className="ushio-player-video-control-mask" />
+        <div className="ushio-player-video-control-mask"/>
         <div className="ushio-player-video-control-wrap" ref={this.videoControl}>
           <div className="ushio-player-video-control">
             <div className="video-control-top">
               <div className="video-progress">
-                <div className="video-progress-slider" onClick={this.changeCurrentTime}>
+                <div className="video-progress-slider" onClick={this.setCurrentTime}>
                   <div className="slider-track">
                     <div className="slider-track-bar-wrap">
                       <div className="bar-buffer"
@@ -207,12 +221,12 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
             <div className="video-control-bottom">
               <div className="video-control-bottom-left">
                 <div className={`ushio-player-btn btn-start ${this.videoPlayingState}`}
-                     onClick={this.changeVideoPlayingState}
+                     onClick={this.props.playerInstanceStore.togglePlay}
                 >
                   <span className="ushio-player-icon icon-play"
-                        dangerouslySetInnerHTML={{ __html: playIcon as string }} />
+                        dangerouslySetInnerHTML={{__html: playIcon as string}}/>
                   <span className="ushio-player-icon icon-pause"
-                        dangerouslySetInnerHTML={{ __html: pauseIcon as string }} />
+                        dangerouslySetInnerHTML={{__html: pauseIcon as string}}/>
                 </div>
                 <div className="video-time-wrap">
                   <span className="video-time-now">{this.currentTime}</span>
@@ -220,8 +234,8 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
                   <span className="video-time-total">{this.duration}</span>
                 </div>
               </div>
-              <div className="video-control-bottom-center" />
-              <div className="video-control-bottom-right" />
+              <div className="video-control-bottom-center"/>
+              <div className="video-control-bottom-right"/>
             </div>
           </div>
         </div>

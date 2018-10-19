@@ -19,7 +19,7 @@ export class PlayerModel {
   @observable public innerHTML: string;
 
   @action
-  public reload(props: PlayerProps) {
+  public reload = (props: PlayerProps) => {
     if (props.playerStyle) this.playerStyle = props.playerStyle;
     if (props.style) this.style = props.style;
     if (props.className) this.className = props.className;

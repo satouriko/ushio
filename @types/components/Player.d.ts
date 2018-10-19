@@ -19,6 +19,8 @@ export declare class Player extends Component<PlayerPropsInternal, PlayerStates>
     private video;
     private videoControl;
     private hoverTimer;
+    private playReactionDisposer;
+    private currentTimeReactionDisposer;
     constructor(props: PlayerPropsInternal);
     readonly bufferProgress: number;
     readonly playProgress: number;
@@ -33,8 +35,7 @@ export declare class Player extends Component<PlayerPropsInternal, PlayerStates>
     private updateVideoState;
     private getBufferedTime;
     private onMouseMove;
-    private changeVideoPlayingState;
-    private changeCurrentTime;
+    private setCurrentTime;
     render(): JSX.Element;
 }
 export {};

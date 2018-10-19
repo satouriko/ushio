@@ -1,4 +1,4 @@
-import { reaction, when, IReactionDisposer, IReactionPublic } from 'mobx';
+import { reaction, IReactionDisposer, IReactionPublic } from 'mobx';
 import * as React from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 
@@ -43,19 +43,29 @@ export class UshioPlayer {
 
 export class Ushio {
 
-  public readonly store: PlayerInstanceModel;
+  public readonly store = new PlayerInstanceModel();
+  public reload = this.store.reload;
+  public play = this.store.play;
+  public pause = this.store.pause;
+  public togglePlay = this.store.togglePlay;
+  public setCurrentTime = this.store.setCurrentTime;
 
   constructor(props?: PlayerInstanceProps) {
-    this.store = new PlayerInstanceModel();
     if (!props.preload) props.preload = 'metadata';
     this.reload(props);
   }
 
   private readonly events: { [key: string]: (effect: () => void) => IReactionDisposer } = {
-    pause: (effect: () => void) => when(() => this.store.paused, effect),
-    play: (effect: () => void) => when(() => !this.store.paused, effect),
+    pause: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
+      reaction(() => this.store.paused, (d, r) => { if (d) effect(d, r); }),
+    play: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
+      reaction(() => this.store.paused, (d, r) => { if (!d) effect(d, r); }),
     togglePlay: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
       reaction(() => this.store.paused, effect),
+    currentTimeChange: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
+      reaction(() => this.store.currentTime, effect),
+    currentTimeSet: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
+      reaction(() => this.store.currentTimeSetter, effect),
   };
 
   public render = (props?: PlayerProps, node?: Element): UshioPlayer => {
@@ -87,22 +97,6 @@ export class Ushio {
     }
 
     return player;
-  }
-
-  public reload(props: PlayerInstanceProps) {
-    this.store.reload(props);
-  }
-
-  public play() {
-    this.store.paused = false;
-  }
-
-  public pause() {
-    this.store.paused = true;
-  }
-
-  public togglePlay() {
-    this.store.paused = !this.store.paused;
   }
 
   public on(event: string, func: (data?: any, reaction?: IReactionPublic) => void): IReactionDisposer {
