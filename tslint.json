@@ -83,6 +83,8 @@
     "no-consecutive-blank-lines": true,
     "no-irregular-whitespace": true,
     "no-unnecessary-callback-wrapper": true,
+    "no-unused-expression": true,
+    "no-unused-variable": true,
     "object-literal-key-quotes": [
       true,
       "as-needed"

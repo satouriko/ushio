@@ -11,6 +11,8 @@ export interface PlayerProps {
 }
 
 export class PlayerModel {
+
+  // player attributes
   @observable public playerStyle: PlayerStyle;
   @observable public style: CSSProperties;
   @observable public className: string;

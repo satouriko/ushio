@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react';
 import * as React from 'react';
-import { Component, CSSProperties, RefObject } from 'react';
+import { Component, RefObject } from 'react';
 
 import * as pauseIcon from '../icons/pause.svg';
 import * as playIcon from '../icons/play.svg';
@@ -9,7 +9,7 @@ import { PlayerModel } from '../models/PlayerModel';
 import '../stylesheets/player.styl';
 import '../stylesheets/theme.styl';
 
-import { Subtitle, SubtitleProps, SubtitlePropsInternal } from './Subtitle';
+import { Subtitle, SubtitlePropsInternal } from './Subtitle';
 
 export interface PlayerStyle {
   progressColor?: string;

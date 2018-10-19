@@ -1,3 +1,4 @@
+import { IReactionDisposer, IReactionPublic } from 'mobx';
 import * as React from 'react';
 import { Player, PlayerStyle } from './components/Player';
 import { PlayerInstanceModel, PlayerInstanceProps } from './models/PlayerInstanceModel';
@@ -6,18 +7,23 @@ export { PlayerInstanceProps as UshioProps, PlayerProps as UshioPlayerProps, Pla
 export { Player as UshioPlayerComponent, PlayerInstanceModel as UshioPlayerInstanceStore, PlayerModel as UshioPlayerStore };
 export { Subtitle as UshioSubtitleComponent, SubtitleProps as UshioSubtitle } from './components/Subtitle';
 export declare class UshioPlayer {
-    component: React.ReactElement<Player>;
+    readonly component: React.ReactElement<Player>;
     ref: Element;
-    id: string;
-    private store;
+    readonly id: string;
+    readonly store: PlayerModel;
     constructor(init: any);
     reload(props: PlayerProps): void;
     destroy(): void;
 }
 export declare class Ushio {
-    private readonly store;
+    readonly store: PlayerInstanceModel;
     constructor(props?: PlayerInstanceProps);
+    private readonly events;
     render: (props?: PlayerProps, node?: Element) => UshioPlayer;
     reload(props: PlayerInstanceProps): void;
+    play(): void;
+    pause(): void;
+    togglePlay(): void;
+    on(event: string, func: (data?: any, reaction?: IReactionPublic) => void): IReactionDisposer;
 }
 export default Ushio;

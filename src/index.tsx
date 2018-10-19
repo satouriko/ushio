@@ -1,3 +1,4 @@
+import { reaction, when, IReactionDisposer, IReactionPublic } from 'mobx';
 import * as React from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 
@@ -9,14 +10,18 @@ import { PlayerModel, PlayerProps } from './models/PlayerModel';
 export { PlayerInstanceProps as UshioProps, PlayerProps as UshioPlayerProps, PlayerStyle as UshioPlayerStyle };
 
 // export React Component
-export { Player as UshioPlayerComponent, PlayerInstanceModel as UshioPlayerInstanceStore, PlayerModel as UshioPlayerStore };
+export {
+  Player as UshioPlayerComponent,
+  PlayerInstanceModel as UshioPlayerInstanceStore,
+  PlayerModel as UshioPlayerStore
+};
 export { Subtitle as UshioSubtitleComponent, SubtitleProps as UshioSubtitle } from './components/Subtitle';
 
 export class UshioPlayer {
-  public component: React.ReactElement<Player>;
+  public readonly component: React.ReactElement<Player>;
   public ref: Element;
-  public id: string;
-  private store: PlayerModel;
+  public readonly id: string;
+  public readonly store: PlayerModel;
 
   constructor(init: any) {
     this.id = init.id;
@@ -38,13 +43,20 @@ export class UshioPlayer {
 
 export class Ushio {
 
-  private readonly store: PlayerInstanceModel;
+  public readonly store: PlayerInstanceModel;
 
   constructor(props?: PlayerInstanceProps) {
     this.store = new PlayerInstanceModel();
     if (!props.preload) props.preload = 'metadata';
     this.reload(props);
   }
+
+  private readonly events: { [key: string]: (effect: () => void) => IReactionDisposer } = {
+    pause: (effect: () => void) => when(() => this.store.paused, effect),
+    play: (effect: () => void) => when(() => !this.store.paused, effect),
+    togglePlay: (effect: (data?: any, reaction?: IReactionPublic) => void) =>
+      reaction(() => this.store.paused, effect),
+  };
 
   public render = (props?: PlayerProps, node?: Element): UshioPlayer => {
     const playerID =
@@ -61,7 +73,7 @@ export class Ushio {
     playerStore.playerStyle = defaultStyle;
     playerStore.reload(props);
 
-    const Component = <Player playerInstanceStore={this.store} playerStore={playerStore} id={playerID} />;
+    const Component = <Player playerInstanceStore={this.store} playerStore={playerStore} id={playerID}/>;
 
     const player: UshioPlayer = new UshioPlayer({
       component: Component,
@@ -79,6 +91,24 @@ export class Ushio {
 
   public reload(props: PlayerInstanceProps) {
     this.store.reload(props);
+  }
+
+  public play() {
+    this.store.paused = false;
+  }
+
+  public pause() {
+    this.store.paused = true;
+  }
+
+  public togglePlay() {
+    this.store.paused = !this.store.paused;
+  }
+
+  public on(event: string, func: (data?: any, reaction?: IReactionPublic) => void): IReactionDisposer {
+    const e = this.events[event];
+    if (e !== undefined) return e(func);
+    return undefined;
   }
 
 }
