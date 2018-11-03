@@ -1,7 +1,7 @@
 @import "./mixins.styl"
 
 .ushio-player.mouse-hover {
-  .ushio-player-video-control-mask, .ushio-player-video-control-wrap {
+  .ushio-player-custom-mask, .ushio-player-video-control-mask, .ushio-player-video-control-wrap {
     opacity 1
     visibility visible
   }
@@ -33,6 +33,11 @@
     height 100%
     z-index 42
     top 0
+
+    opacity 0
+    visibility hidden
+    -webkit-transition all .2s ease-in-out
+    transition all .2s ease-in-out
   }
 
   .ushio-player-subtitle-container {
