@@ -97,8 +97,12 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
         {
           this.state.flyingSubtitles.map(
             subtitle => subtitle.texts.map(
-              (text, index) => (<span className="ushio-player-subtitle" key={index} dangerouslySetInnerHTML={{__html: text}} />)
+              (text, index) => (
+                <div className="ushio-player-subtitle" key={index}>
+                  <span dangerouslySetInnerHTML={{__html: text}} />
+                </div>
               )
+            )
           )
         }
       </div>
