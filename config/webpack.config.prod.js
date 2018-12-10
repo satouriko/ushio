@@ -3,6 +3,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const WebpackCleanupPlugin =  require('webpack-cleanup-plugin');
 
 let defaultSettings = require('./defaults');
 
@@ -20,6 +21,7 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': '"production"'
     }),
+    new WebpackCleanupPlugin(),
     new HtmlWebpackPlugin({
       template: path.join(__dirname, '../demo/src/index.html'),
     }),

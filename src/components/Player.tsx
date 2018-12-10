@@ -1,3 +1,4 @@
+import autobind from 'autobind-decorator';
 import { reaction, IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
 import * as React from 'react';
@@ -107,14 +108,15 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
     return str;
   }
 
-  private updateVideoState = () => {
+  @autobind
+  private updateVideoState() {
     this.props.playerInstanceStore.currentTime = this.video.current.currentTime;
     this.props.playerInstanceStore.bufferedTime = this.getBufferedTime(this.video.current);
     this.props.playerInstanceStore.duration = this.video.current.duration;
     this.props.playerInstanceStore.paused = this.video.current.paused;
   }
 
-  private getBufferedTime = (target: HTMLVideoElement): number => {
+  private getBufferedTime(target: HTMLVideoElement): number {
     if (target.readyState !== 4) return 0;
     const cur = target.currentTime;
     for (let i = 0; i < target.buffered.length; i++) {
@@ -123,7 +125,8 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
     return cur;
   }
 
-  private onMouseMove = (e: MouseEvent) => {
+  @autobind
+  private onMouseMove(e: MouseEvent) {
     if (!this.video.current || !this.videoControl.current) return;
     const rect = this.video.current.getBoundingClientRect();
     if (e.clientX > rect.left &&
@@ -144,7 +147,8 @@ export class Player extends Component<PlayerPropsInternal, PlayerStates> {
     }
   }
 
-  private setCurrentTime = (e: React.MouseEvent<HTMLDivElement>) => {
+  @autobind
+  private setCurrentTime(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const currentTime = (e.clientX - rect.left) / rect.width * this.props.playerInstanceStore.duration;
     this.video.current.currentTime = currentTime;

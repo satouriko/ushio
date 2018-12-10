@@ -11,5 +11,5 @@ export declare class PlayerModel {
     style: CSSProperties;
     className: string;
     innerHTML: string;
-    reload: (props: PlayerProps) => void;
+    reload(props: PlayerProps): void;
 }

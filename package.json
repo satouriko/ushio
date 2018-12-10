@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run serve",
     "serve": "webpack-dev-server --mode=development --config=config/webpack.config.dev.js --progress",
-    "dist": "rm -rf @types && webpack --mode=production --config=config/webpack.config.dist.js --progress",
-    "build": "rm -rf demo/public && webpack --mode=production --config=config/webpack.config.prod.js  --progress",
+    "dist": "node config/cleanup.js && webpack --mode=production --config=config/webpack.config.dist.js --progress",
+    "build": "webpack --mode=production --config=config/webpack.config.prod.js  --progress",
     "lint": "tslint --fix -c tslint.json --project ./"
   },
   "repository": {
@@ -48,12 +48,14 @@
     "url-loader": "^1.1.2",
     "webpack": "^4.20.2",
     "webpack-bundle-analyzer": "^3.0.2",
+    "webpack-cleanup-plugin": "^0.5.1",
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.9"
   },
   "dependencies": {
     "@types/react": "^16.4.14",
     "@types/react-dom": "^16.0.8",
+    "autobind-decorator": "^2.4.0",
     "mobx": "^5.5.0",
     "subtitle-utils": "^1.2.3"
   }

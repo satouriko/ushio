@@ -1,3 +1,4 @@
+import autobind from 'autobind-decorator';
 import { action, observable } from 'mobx';
 import { CSSProperties } from 'react';
 
@@ -10,6 +11,7 @@ export interface PlayerProps {
   innerHTML?: string;
 }
 
+@autobind
 export class PlayerModel {
 
   // player attributes
@@ -19,7 +21,7 @@ export class PlayerModel {
   @observable public innerHTML: string;
 
   @action
-  public reload = (props: PlayerProps) => {
+  public reload(props: PlayerProps) {
     if (props.playerStyle) this.playerStyle = props.playerStyle;
     if (props.style) this.style = props.style;
     if (props.className) this.className = props.className;

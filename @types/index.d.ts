@@ -24,7 +24,7 @@ export declare class Ushio {
     setCurrentTime: (time: number) => void;
     constructor(props?: PlayerInstanceProps);
     private readonly events;
-    render: (props?: PlayerProps, node?: Element) => UshioPlayer;
+    render(props?: PlayerProps, node?: Element): UshioPlayer;
     on(event: string, func: (data?: any, reaction?: IReactionPublic) => void): IReactionDisposer;
 }
 export default Ushio;

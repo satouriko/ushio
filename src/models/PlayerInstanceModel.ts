@@ -1,3 +1,4 @@
+import autobind from 'autobind-decorator';
 import { action, observable } from 'mobx';
 
 import { SubtitleProps } from '../components/Subtitle';
@@ -10,6 +11,7 @@ export interface PlayerInstanceProps {
   subtitles?: SubtitleProps[];
 }
 
+@autobind
 export class PlayerInstanceModel {
 
   // video attributes
@@ -39,22 +41,22 @@ export class PlayerInstanceModel {
   }
 
   @action
-  public togglePlay = () => {
+  public togglePlay() {
     this.paused = !this.paused;
   }
 
   @action
-  public play = () => {
+  public play() {
     this.paused = false;
   }
 
   @action
-  public pause = () => {
+  public pause() {
     this.paused = true;
   }
 
   @action
-  public setCurrentTime = (time: number) => {
+  public setCurrentTime(time: number) {
     this.currentTimeSetter = time;
   }
 

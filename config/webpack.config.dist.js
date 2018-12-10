@@ -2,6 +2,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
+const WebpackCleanupPlugin = require('webpack-cleanup-plugin');
 
 let defaultSettings = require('./defaults');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
@@ -23,6 +24,7 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': '"production"'
     }),
+    new WebpackCleanupPlugin(),
     new webpack.optimize.AggressiveMergingPlugin(),
     new BundleAnalyzerPlugin({
       analyzerMode: 'server',

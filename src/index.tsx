@@ -1,3 +1,4 @@
+import autobind from 'autobind-decorator';
 import { reaction, IReactionDisposer, IReactionPublic } from 'mobx';
 import * as React from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
@@ -17,6 +18,7 @@ export {
 };
 export { Subtitle as UshioSubtitleComponent, SubtitleProps as UshioSubtitle } from './components/Subtitle';
 
+@autobind
 export class UshioPlayer {
   public readonly component: React.ReactElement<Player>;
   public ref: Element;
@@ -41,6 +43,7 @@ export class UshioPlayer {
 
 }
 
+@autobind
 export class Ushio {
 
   public readonly store = new PlayerInstanceModel();
@@ -68,7 +71,7 @@ export class Ushio {
       reaction(() => this.store.currentTimeSetter, effect),
   };
 
-  public render = (props?: PlayerProps, node?: Element): UshioPlayer => {
+  public render(props?: PlayerProps, node?: Element): UshioPlayer {
     const playerID =
       'ushio-player-' +
       Date.parse(new Date() as any) +

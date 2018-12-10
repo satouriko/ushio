@@ -18,8 +18,8 @@ export declare class PlayerInstanceModel {
     currentTimeSetter: number;
     subtitles?: SubtitleProps[];
     reload: (props: PlayerInstanceProps) => void;
-    togglePlay: () => void;
-    play: () => void;
-    pause: () => void;
-    setCurrentTime: (time: number) => void;
+    togglePlay(): void;
+    play(): void;
+    pause(): void;
+    setCurrentTime(time: number): void;
 }
