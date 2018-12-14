@@ -1,7 +1,7 @@
 /*!
  * ushio - Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭
  * --------
- * @version 2.1.8
+ * @version 2.1.9
  * @homepage: https://github.com/rikakomoe/ushio#readme
  * @license MIT
  * @author rikakomoe
