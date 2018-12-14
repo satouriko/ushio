@@ -76,7 +76,7 @@ export class Ushio {
       'ushio-player-' +
       Date.parse(new Date() as any) +
       '-' +
-      Math.ceil(Math.random() * 233);
+      Math.ceil(Math.random() * 23333);
 
     const defaultStyle: PlayerStyle = {
       progressColor: '#00a1d6',

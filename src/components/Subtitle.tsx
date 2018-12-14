@@ -68,7 +68,7 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
           return await SubtitleUtils.fromVTT(text);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to parse subtitle, please make sure your subtitle is compliant with the standard.');
       return null;
     }
   }
