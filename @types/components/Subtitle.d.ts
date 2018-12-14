@@ -20,7 +20,6 @@ interface SubtitleStates {
 }
 export declare class Subtitle extends Component<SubtitleProps, SubtitleStates> {
     static defaultProps: SubtitleProps;
-    private loading;
     constructor(props: SubtitlePropsInternal);
     componentDidMount(): Promise<void>;
     componentDidUpdate(prevProps: SubtitlePropsInternal, prevState: SubtitleStates): Promise<void>;

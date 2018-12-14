@@ -29,7 +29,6 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
   public static defaultProps: SubtitleProps = {
     _isUshioSubtitleElement: true,
   };
-  private loading: boolean = false;
 
   constructor(props: SubtitlePropsInternal) {
     super(props);
@@ -42,16 +41,14 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
   }
 
   public async componentDidMount() {
-    this.loading = true;
     const subtitle = await Subtitle.initSubtitle(this.props);
-    this.setState({ subtitle }, () => this.loading = false);
+    this.setState({ subtitle });
   }
 
   public async componentDidUpdate(prevProps: SubtitlePropsInternal, prevState: SubtitleStates) {
-    if (this.state.subtitle === undefined && !this.loading) {
-      this.loading = true;
+    if (this.state.subtitle === undefined) {
       const subtitle = await Subtitle.initSubtitle(this.props);
-      this.setState({ subtitle }, () => this.loading = false);
+      this.setState({ subtitle });
     }
   }
 
@@ -80,7 +77,7 @@ export class Subtitle extends Component<SubtitleProps, SubtitleStates> {
     if (nextProps.src !== prevState.src || nextProps.value !== prevState.value) {
       return { src: nextProps.src, value: nextProps.value, subtitle: undefined as SubtitleUtils };
     }
-    if (!prevState.subtitle) return null;
+    if (!prevState.subtitle) return {flyingSubtitles: []};
     const flyingSubtitles: ISubtitle[] = [];
     prevState.subtitle.subtitles.forEach(subtitle => {
       const currentTime = nextProps.currentTime * 1000;

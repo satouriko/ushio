@@ -32,7 +32,7 @@ export class PlayerInstanceModel {
   @observable public subtitles?: SubtitleProps[];
 
   @action
-  public reload = (props: PlayerInstanceProps) => {
+  public reload(props: PlayerInstanceProps) {
     if (props.src) this.src = props.src;
     if (props.poster) this.poster = props.poster;
     if (props.autoPlay) this.autoPlay = props.autoPlay;
