@@ -45,7 +45,6 @@
     "tslint-config-prettier": "^1.15.0",
     "tslint-loader": "^3.6.0",
     "tslint-react": "^3.6.0",
-    "typescript": "^3.1.1",
     "url-loader": "^1.1.2",
     "webpack": "^4.20.2",
     "webpack-bundle-analyzer": "^3.0.2",
@@ -58,6 +57,7 @@
     "@types/react-dom": "^16.0.8",
     "autobind-decorator": "^2.4.0",
     "mobx": "^5.5.0",
-    "subtitle-utils": "^1.2.3"
+    "subtitle-utils": "^1.2.3",
+    "typescript": "^3.1.1"
   }
 }
