@@ -31,8 +31,8 @@ interface PlayerStates {
 @observer
 export class Player extends Component<PlayerPropsInternal, PlayerStates> {
 
-  private readonly video: RefObject<HTMLVideoElement>;
-  private readonly videoControl: RefObject<HTMLDivElement>;
+  private video: RefObject<HTMLVideoElement>;
+  private videoControl: RefObject<HTMLDivElement>;
   private hoverTimer: number = 0;
   private playReactionDisposer: IReactionDisposer;
   private currentTimeReactionDisposer: IReactionDisposer;

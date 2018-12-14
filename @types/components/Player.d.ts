@@ -16,8 +16,8 @@ interface PlayerStates {
     noCursor: boolean;
 }
 export declare class Player extends Component<PlayerPropsInternal, PlayerStates> {
-    private readonly video;
-    private readonly videoControl;
+    private video;
+    private videoControl;
     private hoverTimer;
     private playReactionDisposer;
     private currentTimeReactionDisposer;
