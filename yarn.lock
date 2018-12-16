@@ -3372,10 +3372,10 @@ mobx-react@^5.2.8:
     hoist-non-react-statics "^2.5.0"
     react-lifecycles-compat "^3.0.2"
 
-mobx@~5.7.0:
-  version "5.7.0"
-  resolved "https://registry.npmjs.org/mobx/-/mobx-5.7.0.tgz#dc58cd02fbacc5346071c3e6563b6507aff71f59"
-  integrity sha512-i+EwjPLq/QSvOFtAuhcd5FFWDxWK3gCJCFbW5dhgc4wsaHB/cL6DEVms3vZDgc2txWcfzjYWfknjggE/c0c4fw==
+mobx@^5.8.0:
+  version "5.8.0"
+  resolved "http://registry.npm.taobao.org/mobx/download/mobx-5.8.0.tgz#cf59eae4baa2fde4387ffb6462b7ccf3b497b03c"
+  integrity sha1-z1nq5Lqi/eQ4f/tkYrfM87SXsDw=
 
 move-concurrently@^1.0.1:
   version "1.0.1"
