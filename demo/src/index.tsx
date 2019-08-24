@@ -10,19 +10,19 @@ interface Video {src: string; subtitle: string; caption: string; }
 
 const videos: Video[] = [
   {
-    src: 'https://tokimekiwakuwaku.rikako.moe/ときめきポポロン♪ .mp4',
-    subtitle: 'https://tokimekiwakuwaku.rikako.moe/ときめきポポロン♪  - subtitle.srt',
-    caption: 'https://tokimekiwakuwaku.rikako.moe/ときめきポポロン♪  - caption.srt',
+    src: 'https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪ .mp4',
+    subtitle: 'https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - subtitle.srt',
+    caption: 'https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - caption.srt',
   },
   {
-    src: 'https://tokimekiwakuwaku.rikako.moe/ひだまりデイズ-TV size ver.-.mp4',
-    subtitle: 'https://tokimekiwakuwaku.rikako.moe/ひだまりデイズ-TV size ver.- - subtitle.srt',
-    caption: 'https://tokimekiwakuwaku.rikako.moe/ひだまりデイズ-TV size ver.- - caption.srt',
+    src: 'https://tokimekiwakuwaku.netlify.com/ひだまりデイズ-TV size ver.-.mp4',
+    subtitle: 'https://tokimekiwakuwaku.netlify.com/ひだまりデイズ-TV size ver.- - subtitle.srt',
+    caption: 'https://tokimekiwakuwaku.netlify.com/ひだまりデイズ-TV size ver.- - caption.srt',
   },
   {
-    src: 'https://tokimekiwakuwaku.rikako.moe/夜空はなんでも知ってるの.mp4',
-    subtitle: 'https://tokimekiwakuwaku.rikako.moe/夜空はなんでも知ってるの - subtitle.srt',
-    caption: 'https://tokimekiwakuwaku.rikako.moe/夜空はなんでも知ってるの - caption.srt',
+    src: 'https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの.mp4',
+    subtitle: 'https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - subtitle.srt',
+    caption: 'https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - caption.srt',
   },
 ];
 
