@@ -2,5 +2,285 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "newProjectRoot": "projects",
-  "projects": {}
+  "projects": {
+    "ushio": {
+      "projectType": "library",
+      "root": "projects/ushio",
+      "sourceRoot": "projects/ushio/src",
+      "prefix": "ushio",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/ushio/tsconfig.lib.json",
+            "project": "projects/ushio/ng-package.json"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ushio/src/test.ts",
+            "tsConfig": "projects/ushio/tsconfig.spec.json",
+            "karmaConfig": "projects/ushio/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ushio/tsconfig.lib.json",
+              "projects/ushio/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    },
+    "ushio-demo": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "styl"
+        }
+      },
+      "root": "projects/ushio-demo",
+      "sourceRoot": "projects/ushio-demo/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/ushio-demo",
+            "index": "projects/ushio-demo/src/index.html",
+            "main": "projects/ushio-demo/src/main.ts",
+            "polyfills": "projects/ushio-demo/src/polyfills.ts",
+            "tsConfig": "projects/ushio-demo/tsconfig.app.json",
+            "aot": false,
+            "assets": [
+              "projects/ushio-demo/src/favicon.ico",
+              "projects/ushio-demo/src/assets"
+            ],
+            "styles": [
+              "projects/ushio-demo/src/styles.styl"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/ushio-demo/src/environments/environment.ts",
+                  "with": "projects/ushio-demo/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "ushio-demo:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "ushio-demo:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "ushio-demo:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ushio-demo/src/test.ts",
+            "polyfills": "projects/ushio-demo/src/polyfills.ts",
+            "tsConfig": "projects/ushio-demo/tsconfig.spec.json",
+            "karmaConfig": "projects/ushio-demo/karma.conf.js",
+            "assets": [
+              "projects/ushio-demo/src/favicon.ico",
+              "projects/ushio-demo/src/assets"
+            ],
+            "styles": [
+              "projects/ushio-demo/src/styles.styl"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ushio-demo/tsconfig.app.json",
+              "projects/ushio-demo/tsconfig.spec.json",
+              "projects/ushio-demo/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/ushio-demo/e2e/protractor.conf.js",
+            "devServerTarget": "ushio-demo:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "ushio-demo:serve:production"
+            }
+          }
+        }
+      }
+    },
+    "ushio-app": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "styl"
+        }
+      },
+      "root": "projects/ushio-app",
+      "sourceRoot": "projects/ushio-app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/ushio-app",
+            "index": "projects/ushio-app/src/index.html",
+            "main": "projects/ushio-app/src/main.ts",
+            "polyfills": "projects/ushio-app/src/polyfills.ts",
+            "tsConfig": "projects/ushio-app/tsconfig.app.json",
+            "aot": false,
+            "assets": [
+              "projects/ushio-app/src/favicon.ico",
+              "projects/ushio-app/src/assets"
+            ],
+            "styles": [
+              "projects/ushio-app/src/styles.styl"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/ushio-app/src/environments/environment.ts",
+                  "with": "projects/ushio-app/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "ushio-app:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "ushio-app:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "ushio-app:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ushio-app/src/test.ts",
+            "polyfills": "projects/ushio-app/src/polyfills.ts",
+            "tsConfig": "projects/ushio-app/tsconfig.spec.json",
+            "karmaConfig": "projects/ushio-app/karma.conf.js",
+            "assets": [
+              "projects/ushio-app/src/favicon.ico",
+              "projects/ushio-app/src/assets"
+            ],
+            "styles": [
+              "projects/ushio-app/src/styles.styl"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ushio-app/tsconfig.app.json",
+              "projects/ushio-app/tsconfig.spec.json",
+              "projects/ushio-app/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/ushio-app/e2e/protractor.conf.js",
+            "devServerTarget": "ushio-app:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "ushio-app:serve:production"
+            }
+          }
+        }
+      }
+    }},
+  "defaultProject": "ushio"
 }
