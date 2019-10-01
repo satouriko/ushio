@@ -1,16 +1,23 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-
-import { AppComponent } from './app.component';
+import { Injector, NgModule } from '@angular/core';
+import { UshioComponent, UshioModule } from 'ushio';
+import { createCustomElement } from '@angular/elements';
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    UshioModule
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  entryComponents: [
+    UshioComponent
+  ]
 })
-export class AppModule { }
+export class AppModule {
+  constructor(private injector: Injector) { }
+
+  ngDoBootstrap() {
+    const customElement = createCustomElement(UshioComponent, { injector: this.injector });
+    window.customElements.define('ushio-player', customElement);
+  }
+}

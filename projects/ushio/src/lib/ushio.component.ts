@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'ushio-ushio',
+  selector: 'ushio-player',
   template: `
     <p>
       ushio works!

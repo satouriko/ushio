@@ -1,8 +1,19 @@
 {
   "name": "ushio",
   "version": "4.0.0",
+  "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
   "peerDependencies": {
     "@angular/common": "^8.2.8",
     "@angular/core": "^8.2.8"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rikakomoe/ushio.git"
+  },
+  "author": "rikakomoe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rikakomoe/ushio/issues"
+  },
+  "homepage": "https://github.com/rikakomoe/ushio#readme"
 }
