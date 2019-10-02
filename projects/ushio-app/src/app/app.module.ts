@@ -10,14 +10,16 @@ import { createCustomElement } from '@angular/elements';
   ],
   providers: [],
   entryComponents: [
-    UshioComponent
-  ]
+    UshioComponent,
+  ],
 })
 export class AppModule {
   constructor(private injector: Injector) { }
 
   ngDoBootstrap() {
-    const customElement = createCustomElement(UshioComponent, { injector: this.injector });
-    window.customElements.define('ushio-player', customElement);
+    window.customElements.define(
+      'ushio-player',
+      createCustomElement(UshioComponent, { injector: this.injector })
+    );
   }
 }
