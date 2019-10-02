@@ -1,0 +1,59 @@
+<div [className]="'ushio-player ' + hoverClass">
+  <div [className]="'ushio-player-video-mask ' + noCursorClass" (click)="togglePlay()"></div>
+  <div class="ushio-player-video">
+    <video #video
+      [attr.src]="src"
+      [attr.crossOrigin]="crossorigin"
+      [attr.poster]="poster"
+      [attr.autoplay]="autoplay"
+      [attr.preload]="preload"
+      [attr.loop]="loop"
+      [attr.muted]="muted"
+    >
+      Your browser is too old which doesn't support HTML5 video.
+    </video>
+  </div>
+  <div class="ushio-player-custom-mask">
+    <slot (slotchange)="onSlotChange($event)"></slot>
+  </div>
+  <div class="ushio-player-video-control-mask"></div>
+  <div class="ushio-player-video-control-wrap">
+    <div class="ushio-player-video-control">
+      <div class="video-control-top">
+        <div class="video-progress">
+          <div class="video-progress-slider" (click)="changeCurrentTime($event)">
+            <div class="slider-track">
+              <div class="slider-track-bar-wrap">
+                <div class="bar-buffer" [style]="bufferedProgress"></div>
+                <div class="bar-normal ushio-theme" [style]="playedProgress"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="video-control-bottom">
+        <div class="video-control-bottom-left">
+          <div [className]="'ushio-player-btn btn-start ' + pausedClass" (click)="togglePlay()">
+            <span class="ushio-player-icon icon-play">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+                <path d="M17.982 9.275L8.06 3.27A2.013 2.013 0 0 0 5 4.994v12.011a2.017 2.017 0 0 0 3.06 1.725l9.922-6.005a2.017 2.017 0 0 0 0-3.45z"></path>
+              </svg>
+            </span>
+            <span class="ushio-player-icon icon-pause">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+                <path d="M7 3a2 2 0 0 0-2 2v12a2 2 0 1 0 4 0V5a2 2 0 0 0-2-2zM15 3a2 2 0 0 0-2 2v12a2 2 0 1 0 4 0V5a2 2 0 0 0-2-2z"></path>
+              </svg>
+            </span>
+          </div>
+          <div class="video-time-wrap">
+            <span class="video-time-now">{{currentTimeStr}}</span>
+            <span class="video-time-divider">/</span>
+            <span class="video-time-total">{{durationStr}}</span>
+          </div>
+        </div>
+        <div class="video-control-bottom-center"></div>
+        <div class="video-control-bottom-right"></div>
+      </div>
+    </div>
+  </div>
+</div>

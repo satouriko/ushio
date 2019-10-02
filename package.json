@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve ushio-demo",
-    "build": "gulp",
+    "start": "gulp serve",
+    "build": "gulp build",
+    "build-demo": "gulp buildDemo",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

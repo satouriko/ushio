@@ -4,16 +4,52 @@ const sourcemaps = require('gulp-sourcemaps');
 const cp = require('child_process');
 const jsonModify = require('gulp-json-modify');
 
+function serve() {
+  const child = cp.spawn(
+    'ng',
+    ['build', 'ushio', '--watch'],
+    {stdio: 'pipe'}
+    );
+  let child2;
+  let watchingDemo = false;
+  child.stdout.pipe(process.stdout);
+  child.stderr.pipe(process.stderr);
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', function(data) {
+    if (data.match(/Compilation complete./) && !watchingDemo) {
+      child2 = cp.spawn(
+        'ng',
+        ['serve', 'ushio-demo'],
+        { stdio: 'inherit' }
+      );
+      watchingDemo = true;
+    }
+  });
+  return child;
+}
+
 function buildLibrary() {
-  return cp.spawn("ng", ["build", 'ushio'], { stdio: "inherit" });
+  return cp.spawn(
+    'ng',
+    ['build', 'ushio'],
+    { stdio: 'inherit' }
+    );
 }
 
 function buildApp() {
   return cp.spawn(
-    "ng",
-    ["build", 'ushio-app', '--prod'],
-    { stdio: "inherit" }
+    'ng',
+    ['build', 'ushio-app', '--prod'],
+    { stdio: 'inherit' }
     );
+}
+
+function buildDemo() {
+  return cp.spawn(
+    'ng',
+    ['build', 'ushio-demo', '--prod'],
+    { stdio: 'inherit' }
+  );
 }
 
 function concatES2015() {
@@ -53,10 +89,14 @@ function packageJson() {
     .pipe(gulp.dest('./dist/ushio')));
 }
 
-exports.default = gulp.series(
+exports.serve = serve;
+
+exports.build = gulp.series(
   buildLibrary,
   buildApp,
   concatES2015,
   concatES5,
   packageJson
 );
+
+exports.buildDemo = buildDemo;
