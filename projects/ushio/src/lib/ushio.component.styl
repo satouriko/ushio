@@ -146,13 +146,37 @@
               }
 
               .slider-track-thumb {
-
+                cursor pointer
+                position absolute
+                transform translateX(-50%)
+                .slider-track-thumb-dot-special {
+                  line-height 12px
+                  width 18px
+                  height 18px
+                  transition all .2s
+                  opacity 0
+                  transform scale(0)
+                }
               }
             }
           }
 
           .video-progress-detail {
 
+          }
+
+          &:hover, &.mouse-down {
+            .video-progress-slider {
+              .slider-track {
+                height 4px
+                .slider-track-thumb {
+                  .slider-track-thumb-dot-special {
+                    opacity 1
+                    transform scale(1)
+                  }
+                }
+              }
+            }
           }
         }
       }

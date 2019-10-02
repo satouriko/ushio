@@ -1,5 +1,5 @@
-<div [className]="'ushio-player ' + hoverClass">
-  <div [className]="'ushio-player-video-mask ' + noCursorClass" (click)="togglePlay()"></div>
+<div [className]="'ushio-player' + hoverClass">
+  <div [className]="'ushio-player-video-mask' + noCursorClass" (click)="togglePlay()"></div>
   <div class="ushio-player-video">
     <video #video
       [attr.src]="src"
@@ -20,12 +20,37 @@
   <div class="ushio-player-video-control-wrap">
     <div class="ushio-player-video-control">
       <div class="video-control-top">
-        <div class="video-progress">
-          <div class="video-progress-slider" (click)="changeCurrentTime($event)">
+        <div [className]="'video-progress' + mouseDownClass">
+          <div class="video-progress-slider" #sliderTrack>
             <div class="slider-track">
               <div class="slider-track-bar-wrap">
                 <div class="bar-buffer" [style]="bufferedProgress"></div>
                 <div class="bar-normal ushio-theme" [style]="playedProgress"></div>
+              </div>
+              <div class="slider-track-thumb" #thumb [style]="thumbPosition">
+                <div class="slider-track-thumb-dot-special" style="width: 18px;height: 18px;">
+                  <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18"
+                         style="width: 100%; height: 100%; transform: translate3d(0px, 0px, 0px);" preserveAspectRatio="xMidYMid meet">
+                      <defs>
+                        <clipPath id="__lottie_element_25">
+                          <rect width="18" height="18" x="0" y="0"></rect>
+                        </clipPath>
+                      </defs>
+                      <g clip-path="url(#__lottie_element_25)">
+                        <g style="display: block;" transform="matrix(1,0,0,1,8.890999794006348,8.406000137329102)" opacity="1">
+                          <g opacity="1" transform="matrix(1,0,0,1,0.09099999815225601,1.1009999513626099)">
+                            <path fill="rgb(255,255,255)" fill-opacity="1"
+                                  d=" M7,-3 C7,-3 7,3 7,3 C7,4.379749774932861 5.879749774932861,5.5 4.5,5.5 C4.5,5.5 -4.5,5.5 -4.5,5.5 C-5.879749774932861,5.5 -7,4.379749774932861 -7,3 C-7,3 -7,-3 -7,-3 C-7,-4.379749774932861 -5.879749774932861,-5.5 -4.5,-5.5 C-4.5,-5.5 4.5,-5.5 4.5,-5.5 C5.879749774932861,-5.5 7,-4.379749774932861 7,-3z"></path>
+                            <path stroke-linecap="butt" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4" stroke="rgb(0,0,0)"
+                                  stroke-opacity="1" stroke-width="1.5"
+                                  d=" M7,-3 C7,-3 7,3 7,3 C7,4.379749774932861 5.879749774932861,5.5 4.5,5.5 C4.5,5.5 -4.5,5.5 -4.5,5.5 C-5.879749774932861,5.5 -7,4.379749774932861 -7,3 C-7,3 -7,-3 -7,-3 C-7,-4.379749774932861 -5.879749774932861,-5.5 -4.5,-5.5 C-4.5,-5.5 4.5,-5.5 4.5,-5.5 C5.879749774932861,-5.5 7,-4.379749774932861 7,-3z"></path>
+                          </g>
+                        </g>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -33,7 +58,7 @@
       </div>
       <div class="video-control-bottom">
         <div class="video-control-bottom-left">
-          <div [className]="'ushio-player-btn btn-start ' + pausedClass" (click)="togglePlay()">
+          <div [className]="'ushio-player-btn btn-start' + pausedClass" (click)="togglePlay()">
             <span class="ushio-player-icon icon-play">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
                 <path d="M17.982 9.275L8.06 3.27A2.013 2.013 0 0 0 5 4.994v12.011a2.017 2.017 0 0 0 3.06 1.725l9.922-6.005a2.017 2.017 0 0 0 0-3.45z"></path>
