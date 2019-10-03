@@ -13,7 +13,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { fromEvent, merge, NEVER, of, Subject, Subscription, timer } from 'rxjs';
-import { concatMap, distinctUntilChanged, map, mapTo, switchAll, switchMap, takeUntil } from 'rxjs/operators';
+import { concatMap, distinctUntilChanged, map, mapTo, switchMap, takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
 @Directive({
@@ -84,6 +84,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get pausedClass(): string {
     return this.video.nativeElement.paused ? ' video-state-pause' : ' video-state-play';
   }
+  get pendingClass(): string {
+    return this.pending && !this.video.nativeElement.paused ? ' video-state-pending' : '';
+  }
   get mutedClass(): string {
     return (this.video.nativeElement.muted || this.video.nativeElement.volume === 0)
       ? ' video-state-muted' : ' video-state-volume';
@@ -97,6 +100,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private currentTime = 0;
   private duration = 0;
   private bufferedTime = 0;
+  private pending = false;
   get currentTimeStr(): string {
     return this.formatDuration(this.currentTime);
   }
@@ -220,6 +224,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate').subscribe(() => {
       this.currentTime = this.video.nativeElement.currentTime;
     });
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting').subscribe(() => {
+      this.pending = true;
+    }));
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'playing').subscribe(() => {
+      this.pending = false;
+    }));
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'progress').subscribe(() => {
       this.bufferedTime = ((timeRanges, currentTime) => {
         const length = timeRanges.length;
@@ -321,6 +331,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.volumeChange.unsubscribe();
       this.controlHoveredChange.unsubscribe();
       this.mVolume = e;
+      this.video.nativeElement.volume = this.mVolume;
     }));
     this.subscriptions.push(volumeDrag$.subscribe(e => {
       this.mVolume = e;
