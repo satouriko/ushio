@@ -12,8 +12,8 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import { EMPTY, fromEvent, merge, of, Subject, Subscription, timer } from 'rxjs';
-import { concatMap, distinctUntilChanged, map, mapTo, switchAll, takeUntil } from 'rxjs/operators';
+import { fromEvent, merge, NEVER, of, Subject, Subscription, timer } from 'rxjs';
+import { concatMap, distinctUntilChanged, map, mapTo, switchAll, switchMap, takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
 @Directive({
@@ -65,7 +65,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private hover = false;
   private thumbMouseDown = false;
   private volumeMouseDown = false;
-  private volumeHover = false;
+  controlHoveredClass = '';
   get isFullScreen(): boolean {
     return document.fullscreenElement !== null;
   }
@@ -73,10 +73,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return this.thumbMouseDown || this.volumeMouseDown;
   }
   get hoverClass(): string {
-    return (this.hover || this.volumeHover || this.mouseDown) ? ' mouse-hover' : '';
+    return (this.hover || this.controlHoveredClass || this.mouseDown) ? ' mouse-hover' : '';
   }
   get noCursorClass(): string {
-    return !(this.hover || this.volumeHover || this.mouseDown) ? ' no-cursor' : '';
+    return !(this.hover || this.controlHoveredClass || this.mouseDown) ? ' no-cursor' : '';
   }
   get thumbMouseDownClass(): string {
     return this.thumbMouseDown ? ' thumb-mouse-down' : '';
@@ -93,9 +93,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get fullscreenClass(): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen';
-  }
-  get volumeHoverClass(): string {
-    return (this.volumeHover || this.volumeMouseDown) ? ' btn-volume-hover' : '';
   }
   private currentTime = 0;
   private duration = 0;
@@ -134,6 +131,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   private timeUpdate: Subscription;
   private volumeChange: Subscription;
+  private controlHoveredChange: Subscription;
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -168,33 +166,39 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   ngAfterViewInit() {
     const mouseMove$ = fromEvent(document, 'mousemove');
     const mouseUp$ = fromEvent(document, 'mouseup');
-    const onControlBtnHoverStateChanged$ = (btnElement, popUpElement) => {
+    const mouseInArea = (e: MouseEvent, btnElement, popUpElement) => {
+      const rect1 = popUpElement.getBoundingClientRect();
+      const rect2 = btnElement.getBoundingClientRect();
+      return (e.clientX > rect1.left &&
+        e.clientX < rect1.right &&
+        e.clientY > rect1.top &&
+        e.clientY < rect1.bottom) || (e.clientX > rect2.left &&
+        e.clientX < rect2.right &&
+        e.clientY > rect2.top &&
+        e.clientY < rect2.bottom);
+    };
+    interface PopUpBtn {
+      btnElement: HTMLElement;
+      popUpElement: HTMLElement;
+      btnName: string;
+    }
+    const onControlBtnHoverStateChanged$ = (btns: PopUpBtn[]) => {
       return mouseMove$.pipe(
-        map((e: MouseEvent) => {
-          const rect1 = popUpElement.getBoundingClientRect();
-          const rect2 = btnElement.getBoundingClientRect();
-          return (e.clientX > rect1.left &&
-            e.clientX < rect1.right &&
-            e.clientY > rect1.top &&
-            e.clientY < rect1.bottom) || (e.clientX > rect2.left &&
-            e.clientX < rect2.right &&
-            e.clientY > rect2.top &&
-            e.clientY < rect2.bottom)
-            ? of(true)
-            : (e.clientX < rect1.right &&
-              e.clientX > rect1.left &&
-              e.clientY < rect2.bottom &&
-              e.clientY > rect1.top)
-              ? timer(1500).pipe(
-                mapTo(false)
-              ) : of(false);
+        switchMap((e: MouseEvent) => {
+          for (const btn of btns) {
+            if (mouseInArea(e, btn.btnElement, btn.popUpElement)) {
+              return of(` btn-${btn.btnName}-hover`);
+            }
+          }
+          return timer(150).pipe(
+            mapTo('')
+          );
         }),
-        switchAll(),
         distinctUntilChanged()
       );
     };
     const hoverStateChanged$ = mouseMove$.pipe(
-      map((e: MouseEvent) => {
+      switchMap((e: MouseEvent) => {
         const rect = this.video.nativeElement.getBoundingClientRect();
         return e.clientX > rect.left &&
         e.clientX < rect.right &&
@@ -202,13 +206,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         e.clientY < rect.bottom
           ? merge(
             of(true),
-            e.clientY < rect.bottom - 46 ? timer(3000).pipe(
+            e.clientY < rect.bottom - 46 ? timer(750).pipe(
               mapTo(false)
-            ) : EMPTY
+            ) : NEVER
           )
           : of(false);
       }),
-      switchAll(),
       distinctUntilChanged()
     );
     this.subscriptions.push(hoverStateChanged$.subscribe(state => {
@@ -294,10 +297,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.thumbMouseDown = false;
       }
     }));
-    const volumeHoverStateChanged$ = onControlBtnHoverStateChanged$(
-      this.volumeBtn.nativeElement,
-      this.volumeBarWrap.nativeElement,
-    );
+    const controlHoverStateChanged$ = onControlBtnHoverStateChanged$([{
+      btnElement: this.volumeBtn.nativeElement,
+      popUpElement: this.volumeBarWrap.nativeElement,
+      btnName: 'volume',
+    }]);
+    this.controlHoveredChange = controlHoverStateChanged$.subscribe(e => {
+      this.controlHoveredClass = e;
+    });
     const volumeMouseDown$ = onMouseDown$(
       this.volumeBarTrack.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.y),
@@ -312,20 +319,21 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(volumeMouseDown$.subscribe(e => {
       this.volumeMouseDown = true;
       this.volumeChange.unsubscribe();
+      this.controlHoveredChange.unsubscribe();
       this.mVolume = e;
     }));
     this.subscriptions.push(volumeDrag$.subscribe(e => {
       this.mVolume = e;
       this.video.nativeElement.volume = this.mVolume;
     }));
-    this.subscriptions.push(volumeHoverStateChanged$.subscribe(e => {
-      this.volumeHover = e;
-    }));
     this.subscriptions.push(mouseUp$.subscribe(() => {
       if (this.volumeMouseDown) {
         this.video.nativeElement.volume = this.mVolume;
         this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange').subscribe(() => {
           this.mVolume = this.video.nativeElement.volume;
+        });
+        this.controlHoveredChange = controlHoverStateChanged$.subscribe(e => {
+          this.controlHoveredClass = e;
         });
         this.volumeMouseDown = false;
       }

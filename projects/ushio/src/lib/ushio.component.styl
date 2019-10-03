@@ -19,6 +19,20 @@
     display none !important;
   }
 
+  .ushio-theme {
+    background #00a1d6
+  }
+
+  .thumb-dot {
+    transform translateZ(0)
+    width 12px
+    height 12px
+    border-radius 50%
+    display flex
+    vertical-align middle
+    align-items center
+  }
+
   .ushio-player-video-mask {
     position absolute
     width 100%
@@ -134,17 +148,12 @@
 
                 .bar-normal {
                   transform scaleX(0)
-                  transition transform .2s, -webkit-transform .2s
                   position absolute
                   transform-origin 0 0
                   top 0
                   bottom 0
                   left 0
                   right 0
-
-                  &.ushio-theme {
-                    background #00a1d6
-                  }
                 }
 
               }
@@ -153,10 +162,7 @@
                 cursor pointer
                 position absolute
                 transform translateX(-50%)
-                .slider-track-thumb-dot-special {
-                  line-height 12px
-                  width 18px
-                  height 18px
+                .thumb-dot {
                   transition all .2s
                   opacity 0
                   transform scale(0)
@@ -174,7 +180,7 @@
               .slider-track {
                 height 4px
                 .slider-track-thumb {
-                  .slider-track-thumb-dot-special {
+                  .thumb-dot {
                     opacity 1
                     transform scale(1)
                   }
@@ -262,7 +268,7 @@
           }
         }
 
-        .btn-volume.btn-volume-hover .volume-bar-wrap {
+        .btn-volume-hover .btn-volume .volume-bar-wrap {
           display block
         }
 
@@ -320,7 +326,6 @@
                   left 0
                   right 0
                   top 0
-                  background #00a1d6
                 }
               }
 
@@ -331,16 +336,8 @@
                 left -5px
                 transform translateY(50%)
 
-                .volume-bar-track-thumb-dot {
+                .thumb-dot {
                   transition all .2s
-                  transform translateZ(0)
-                  width 12px
-                  height 12px
-                  border-radius 50%
-                  background-color #00a1d6
-                  display flex
-                  vertical-align middle
-                  align-items center
                 }
               }
             }
