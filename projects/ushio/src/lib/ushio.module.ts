@@ -6,8 +6,6 @@ import { UshioComponent, UshioSubtitles } from './ushio.component';
     UshioComponent,
     UshioSubtitles,
   ],
-  imports: [
-  ],
   exports: [
     UshioComponent,
     UshioSubtitles

@@ -1,14 +1,18 @@
 import {
-  AfterContentInit, AfterViewInit,
+  AfterContentInit,
+  AfterViewInit,
   Component,
   ContentChildren,
   Directive,
-  Input, OnDestroy,
+  ElementRef,
+  Input,
+  OnDestroy,
   OnInit,
-  QueryList, ViewChild,
+  QueryList,
+  ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import { Observable, of, merge, Subject, fromEvent, timer, Subscription, EMPTY } from 'rxjs';
+import { EMPTY, fromEvent, merge, of, Subject, Subscription, timer } from 'rxjs';
 import { concatMap, distinctUntilChanged, map, mapTo, switchAll, takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
@@ -36,49 +40,62 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @Input() preload = 'metadata';
   @Input() loop;
   @Input() muted;
+  @Input() set volume(volume) {
+    this.video.nativeElement.volume = volume / 100;
+  }
+  get volume() {
+    return Math.round(this.mVolume * 100);
+  }
+  @Input() volumeControl = true;
+  @Input() loopControl = true;
+  @Input() fullscreenControl = true;
+  @Input() subtitlesControl = true;
+
+  private mVolume = 1;
 
   @ViewChild('video', {static: true}) video;
   @ViewChild('sliderTrack', {static: true}) sliderTrack;
+  @ViewChild('volumeBarTrack', {static: true}) volumeBarTrack;
+  @ViewChild('volumeBarWrap', {static: true}) volumeBarWrap;
+  @ViewChild('volumeBtn', {static: true}) volumeBtn;
 
   @ContentChildren(UshioSubtitles) subtitles!: QueryList<UshioSubtitles>;
-  private subtitles$: Observable<string[]>;
   private subtitlesSlot$ = new Subject<HTMLElement[]>();
 
-  private sub: Subscription[] = [];
-
-  private mouseMove$ = fromEvent(document, 'mousemove');
-  private mouseUp$ = fromEvent(document, 'mouseup');
-  private activeState$ = this.mouseMove$.pipe(
-    map((e: MouseEvent) => {
-      const rect = this.video.nativeElement.getBoundingClientRect();
-      return e.clientX > rect.left &&
-        e.clientX < rect.right &&
-        e.clientY > rect.top &&
-        e.clientY < rect.bottom
-          ? merge(
-              of(true),
-              e.clientY < rect.bottom - 46 ? timer(3000).pipe(
-                mapTo(false)
-              ) : EMPTY
-            )
-          : of(false);
-    }),
-    switchAll(),
-    distinctUntilChanged()
-  );
   private hover = false;
-  private mouseDown = false;
+  private thumbMouseDown = false;
+  private volumeMouseDown = false;
+  private volumeHover = false;
+  get isFullScreen(): boolean {
+    return document.fullscreenElement !== null;
+  }
+  get mouseDown(): boolean {
+    return this.thumbMouseDown || this.volumeMouseDown;
+  }
   get hoverClass(): string {
-    return (this.hover || this.mouseDown) ? ' mouse-hover' : '';
+    return (this.hover || this.volumeHover || this.mouseDown) ? ' mouse-hover' : '';
   }
   get noCursorClass(): string {
-    return !(this.hover || this.mouseDown) ? ' no-cursor' : '';
+    return !(this.hover || this.volumeHover || this.mouseDown) ? ' no-cursor' : '';
   }
-  get mouseDownClass(): string {
-    return this.mouseDown ? ' mouse-down' : '';
+  get thumbMouseDownClass(): string {
+    return this.thumbMouseDown ? ' thumb-mouse-down' : '';
   }
   get pausedClass(): string {
     return this.video.nativeElement.paused ? ' video-state-pause' : ' video-state-play';
+  }
+  get mutedClass(): string {
+    return (this.video.nativeElement.muted || this.video.nativeElement.volume === 0)
+      ? ' video-state-muted' : ' video-state-volume';
+  }
+  get repeatClass(): string {
+    return this.video.nativeElement.loop ? ' video-state-repeat' : ' video-state-norepeat';
+  }
+  get fullscreenClass(): string {
+    return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen';
+  }
+  get volumeHoverClass(): string {
+    return (this.volumeHover || this.volumeMouseDown) ? ' btn-volume-hover' : '';
   }
   private currentTime = 0;
   private duration = 0;
@@ -104,17 +121,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       `left: ${this.currentTime / this.duration * 100}%`
     );
   }
+  get volumeRate(): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: scaleY(${this.mVolume})`
+    );
+  }
+  get volumeThumbPosition(): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `bottom: ${this.volume}%`
+    );
+  }
 
   private timeUpdate: Subscription;
+  private volumeChange: Subscription;
+  private subscriptions: Subscription[] = [];
 
-  constructor(private sanitization: DomSanitizer) { }
+  constructor(
+    private element: ElementRef,
+    private sanitization: DomSanitizer
+  ) { }
 
   ngOnInit() {
-
+    this.mVolume = this.video.nativeElement.volume;
   }
 
   ngAfterContentInit() {
-    this.subtitles$ = merge(
+    const subtitles$ = merge(
       of(this.subtitles.map(item => item.value)),
       this.subtitles.changes.pipe(
         map(subtitles => (
@@ -128,19 +160,64 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         ))
       )
     );
-    this.sub.push(this.subtitles$.subscribe((subtitles) => {
+    this.subscriptions.push(subtitles$.subscribe((subtitles) => {
       console.log(subtitles);
     }));
   }
 
   ngAfterViewInit() {
-    this.sub.push(this.activeState$.subscribe(state => {
+    const mouseMove$ = fromEvent(document, 'mousemove');
+    const mouseUp$ = fromEvent(document, 'mouseup');
+    const onControlBtnHoverStateChanged$ = (btnElement, popUpElement) => {
+      return mouseMove$.pipe(
+        map((e: MouseEvent) => {
+          const rect1 = popUpElement.getBoundingClientRect();
+          const rect2 = btnElement.getBoundingClientRect();
+          return (e.clientX > rect1.left &&
+            e.clientX < rect1.right &&
+            e.clientY > rect1.top &&
+            e.clientY < rect1.bottom) || (e.clientX > rect2.left &&
+            e.clientX < rect2.right &&
+            e.clientY > rect2.top &&
+            e.clientY < rect2.bottom)
+            ? of(true)
+            : (e.clientX < rect1.right &&
+              e.clientX > rect1.left &&
+              e.clientY < rect2.bottom &&
+              e.clientY > rect1.top)
+              ? timer(1500).pipe(
+                mapTo(false)
+              ) : of(false);
+        }),
+        switchAll(),
+        distinctUntilChanged()
+      );
+    };
+    const hoverStateChanged$ = mouseMove$.pipe(
+      map((e: MouseEvent) => {
+        const rect = this.video.nativeElement.getBoundingClientRect();
+        return e.clientX > rect.left &&
+        e.clientX < rect.right &&
+        e.clientY > rect.top &&
+        e.clientY < rect.bottom
+          ? merge(
+            of(true),
+            e.clientY < rect.bottom - 46 ? timer(3000).pipe(
+              mapTo(false)
+            ) : EMPTY
+          )
+          : of(false);
+      }),
+      switchAll(),
+      distinctUntilChanged()
+    );
+    this.subscriptions.push(hoverStateChanged$.subscribe(state => {
       this.hover = state;
     }));
     this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate').subscribe(() => {
       this.currentTime = this.video.nativeElement.currentTime;
     });
-    this.sub.push(fromEvent(this.video.nativeElement, 'progress').subscribe(() => {
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'progress').subscribe(() => {
       this.bufferedTime = ((timeRanges, currentTime) => {
         const length = timeRanges.length;
         for (let i = 0; i < length; i++) {
@@ -155,50 +232,109 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         return currentTime;
       })(this.video.nativeElement.buffered, this.video.nativeElement.currentTime);
     }));
-    this.sub.push(fromEvent(this.video.nativeElement, 'loadedmetadata').subscribe(() => {
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'loadedmetadata').subscribe(() => {
       this.duration = this.video.nativeElement.duration;
     }));
-    const thumbMouseDown$ = fromEvent(this.sliderTrack.nativeElement, 'mousedown');
-    const thumbDrag$ = thumbMouseDown$.pipe(
-      concatMap(() => {
-        return this.mouseMove$.pipe(
-          takeUntil(this.mouseUp$),
-          map((moveEvent: MouseEvent) => {
-            const rect = this.sliderTrack.nativeElement.getBoundingClientRect();
-            let progress = moveEvent.x - rect.left;
-            if (progress < 0) {
-              progress = 0;
-            } else if (progress > rect.width) {
-              progress = rect.width;
-            }
-            return progress / rect.width;
-          })
-        );
-      })
+    this.video.nativeElement.volume = this.mVolume;
+    this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange').subscribe(() => {
+      this.mVolume = this.video.nativeElement.volume;
+    });
+    const mapToRate = (element, progress, total) => map((moveEvent: MouseEvent) => {
+        const rect = element.getBoundingClientRect();
+        let p = progress(moveEvent, rect);
+        const t = total(rect);
+        if (p < 0) {
+          p = 0;
+        } else if (p > t) {
+          p = t;
+        }
+        return p / t;
+      }
     );
-    this.sub.push(thumbMouseDown$.subscribe((e: MouseEvent) => {
-      this.mouseDown = true;
+    const onMouseDown$ = (element, progress, total) => {
+      return fromEvent(element, 'mousedown').pipe(
+        mapToRate(element, progress, total)
+      );
+    };
+    const onMouseDrag$ = (mouseDown$, element, progress, total) => {
+      return mouseDown$.pipe(
+        concatMap(() => {
+          return mouseMove$.pipe(
+            takeUntil(mouseUp$),
+            mapToRate(element, progress, total)
+          );
+        })
+      );
+    };
+    const thumbMouseDown$ = onMouseDown$(
+      this.sliderTrack.nativeElement,
+      (moveEvent, rect) => (moveEvent.x - rect.left),
+      (rect) => (rect.width)
+    );
+    const thumbDrag$ = onMouseDrag$(
+      thumbMouseDown$,
+      this.sliderTrack.nativeElement,
+      (moveEvent, rect) => (moveEvent.x - rect.left),
+      (rect) => (rect.width)
+    );
+    this.subscriptions.push(thumbMouseDown$.subscribe(e => {
+      this.thumbMouseDown = true;
       this.timeUpdate.unsubscribe();
-      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-      this.currentTime = (e.clientX - rect.left) / rect.width * this.duration;
-    }));
-    this.sub.push(thumbDrag$.subscribe(e => {
       this.currentTime = e * this.duration;
     }));
-    this.sub.push(this.mouseUp$.subscribe(() => {
-      if (this.mouseDown) {
+    this.subscriptions.push(thumbDrag$.subscribe(e => {
+      this.currentTime = e * this.duration;
+    }));
+    this.subscriptions.push(mouseUp$.subscribe(() => {
+      if (this.thumbMouseDown) {
         this.video.nativeElement.currentTime = this.currentTime;
         this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate').subscribe(() => {
           this.currentTime = this.video.nativeElement.currentTime;
         });
-        this.mouseDown = false;
+        this.thumbMouseDown = false;
+      }
+    }));
+    const volumeHoverStateChanged$ = onControlBtnHoverStateChanged$(
+      this.volumeBtn.nativeElement,
+      this.volumeBarWrap.nativeElement,
+    );
+    const volumeMouseDown$ = onMouseDown$(
+      this.volumeBarTrack.nativeElement,
+      (moveEvent, rect) => (rect.bottom - moveEvent.y),
+      (rect) => (rect.height),
+    );
+    const volumeDrag$ = onMouseDrag$(
+      volumeMouseDown$,
+      this.volumeBarTrack.nativeElement,
+      (moveEvent, rect) => (rect.bottom - moveEvent.y),
+      (rect) => (rect.height),
+    );
+    this.subscriptions.push(volumeMouseDown$.subscribe(e => {
+      this.volumeMouseDown = true;
+      this.volumeChange.unsubscribe();
+      this.mVolume = e;
+    }));
+    this.subscriptions.push(volumeDrag$.subscribe(e => {
+      this.mVolume = e;
+      this.video.nativeElement.volume = this.mVolume;
+    }));
+    this.subscriptions.push(volumeHoverStateChanged$.subscribe(e => {
+      this.volumeHover = e;
+    }));
+    this.subscriptions.push(mouseUp$.subscribe(() => {
+      if (this.volumeMouseDown) {
+        this.video.nativeElement.volume = this.mVolume;
+        this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange').subscribe(() => {
+          this.mVolume = this.video.nativeElement.volume;
+        });
+        this.volumeMouseDown = false;
       }
     }));
   }
 
   ngOnDestroy() {
     this.timeUpdate.unsubscribe();
-    this.sub.forEach(sub => sub.unsubscribe());
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   onSlotChange(e) {
@@ -212,6 +348,22 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.video.nativeElement.play();
     } else {
       this.video.nativeElement.pause();
+    }
+  }
+
+  toggleMute() {
+    this.video.nativeElement.muted = !this.video.nativeElement.muted;
+  }
+
+  toggleLoop() {
+    this.video.nativeElement.loop = !this.video.nativeElement.loop;
+  }
+
+  toggleFullscreen() {
+    if (!this.isFullScreen) {
+      this.element.nativeElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
     }
   }
 

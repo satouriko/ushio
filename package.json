@@ -7,7 +7,7 @@
     "build": "gulp build",
     "build-demo": "gulp buildDemo",
     "test": "ng test",
-    "lint": "ng lint",
+    "lint": "ng lint --fix",
     "e2e": "ng e2e"
   },
   "private": true,

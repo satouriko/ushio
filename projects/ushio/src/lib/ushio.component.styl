@@ -15,6 +15,10 @@
   overflow hidden
   user-select none
 
+  .hide {
+    display none !important;
+  }
+
   .ushio-player-video-mask {
     position absolute
     width 100%
@@ -165,7 +169,7 @@
 
           }
 
-          &:hover, &.mouse-down {
+          &:hover, &.thumb-mouse-down {
             .video-progress-slider {
               .slider-track {
                 height 4px
@@ -193,10 +197,16 @@
           float left
         }
 
+        .video-control-bottom-right {
+          display flex
+          justify-content flex-end
+        }
+
         .ushio-player-btn {
           height 22px
           line-height 22px
           width 36px
+          position relative
 
           .ushio-player-icon {
             height 22px
@@ -216,10 +226,6 @@
           }
         }
 
-        .btn-start {
-          width 36px
-        }
-
         .btn-start.video-state-pause {
           .icon-pause {
             display none
@@ -234,6 +240,145 @@
             display inline-flex
           }
           .icon-play {
+            display none
+          }
+        }
+
+        .btn-volume.video-state-muted {
+          .icon-volume-max {
+            display none
+          }
+          .icon-volume-min {
+            display inline-flex
+          }
+        }
+
+        .btn-volume.video-state-volume {
+          .icon-volume-max {
+            display inline-flex
+          }
+          .icon-volume-min {
+            display none
+          }
+        }
+
+        .btn-volume.btn-volume-hover .volume-bar-wrap {
+          display block
+        }
+
+        .btn-volume .volume-bar-wrap {
+          display none
+          position absolute
+          cursor default
+          bottom 41px
+          left 2px
+          width 32px
+          height 106px
+          background rgba(21,21,21,.9)
+          border-radius 2px
+
+          .volume-num {
+            color #e5e9ef
+            width 100%
+            text-align center
+            font-size 12px
+            height 26px
+            line-height 28px
+          }
+
+          .volume-bar {
+            width 30px
+            margin 6px auto
+            height 60px
+            display flex
+            vertical-align middle
+            align-items center
+            justify-content center
+            cursor pointer
+
+            .volume-bar-track {
+              height 100%
+              width 2px
+              align-items flex-end
+              position relative
+              display flex
+
+              .volume-bar-track-wrap {
+                position absolute
+                top 0
+                bottom 0
+                left 0
+                right 0
+                border-radius 1.5px
+                overflow hidden
+                background #e7e7e7
+
+                .bar-normal {
+                  position absolute
+                  transform-origin 0 100%
+                  bottom 0
+                  left 0
+                  right 0
+                  top 0
+                  background #00a1d6
+                }
+              }
+
+              .volume-bar-track-thumb {
+                bottom 0
+                top auto
+                position relative
+                left -5px
+                transform translateY(50%)
+
+                .volume-bar-track-thumb-dot {
+                  transition all .2s
+                  transform translateZ(0)
+                  width 12px
+                  height 12px
+                  border-radius 50%
+                  background-color #00a1d6
+                  display flex
+                  vertical-align middle
+                  align-items center
+                }
+              }
+            }
+          }
+        }
+
+        .btn-repeat.video-state-repeat {
+          .icon-repeat-off {
+            display none
+          }
+          .icon-repeat-on {
+            display inline-flex
+          }
+        }
+
+        .btn-repeat.video-state-norepeat {
+          .icon-repeat-off {
+            display inline-flex
+          }
+          .icon-repeat-on {
+            display none
+          }
+        }
+
+        .btn-fullscreen.video-state-fullscreen {
+          .icon-fullscreen-off {
+            display none
+          }
+          .icon-fullscreen-on {
+            display inline-flex
+          }
+        }
+
+        .btn-fullscreen.video-state-nofullscreen {
+          .icon-fullscreen-off {
+            display inline-flex
+          }
+          .icon-fullscreen-on {
             display none
           }
         }
