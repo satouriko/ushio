@@ -8,7 +8,7 @@
 }
 
 .ushio-player.mobile {
-  .ushio-player-video-mask {
+  .ushio-player-video-mask, .ushio-player-video-mask.no-cursor {
     cursor default
   }
   .ushio-player-video-control-wrap {
@@ -136,6 +136,7 @@
     width 100%
     box-sizing border-box
     opacity 0
+    visibility hidden
     -webkit-transition all .2s ease-in-out
     transition all .2s ease-in-out
 

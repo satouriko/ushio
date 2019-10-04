@@ -13,7 +13,8 @@ You can use it either in an Angular project or as a stand alone web component.
 
 ### For Angular Projects
 
-Go to this [README](https://www.npmjs.com/package/ushio) for more information.
+You can import this package as an external library to your angular project.
+Go to the [README](https://www.npmjs.com/package/ushio) of this package for more information.
 
 ### For Non-Angular Projects
 
@@ -29,7 +30,7 @@ The above link uses a ES2015 code base. If you need compatibility with older bro
 <script src="https://unpkg.com/ushio@4/bundles/ushio-es5.min.js"></script>
 ```
 
-Then you can use it as a custom element anywhere in your code.
+Then you can use it as a custom element wherever in your code.
 
 ```html
 <ushio-player></ushio-player>
@@ -54,7 +55,7 @@ Run `yarn build-demo` to build the demo website. The build artifacts will be sto
 
 ## 👻 Legacy version
 
-V4 introduces completely breaking changes on both API and technique architecture:
-v4 is based on Angular, RxJS and Web Component API, while v3 is based on React and MobX.
+Version 4 introduces completely breaking changes on both API and technique architecture:
+v4 is based on Angular, RxJS and Web Component API, while v3 was based on React and MobX.
 
-For references of the v3 version, please check out the [v3](https://github.com/rikakomoe/ushio/tree/v3) branch of this repository.
+While v3 is actually a crude and less functional version, if you need references of the v3 version, please check out the [v3](https://github.com/rikakomoe/ushio/tree/v3) branch of this repository.
