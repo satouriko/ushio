@@ -7,6 +7,31 @@
   }
 }
 
+.ushio-player.mobile {
+  .ushio-player-video-mask {
+    cursor default
+  }
+  .ushio-player-video-control-wrap {
+    .ushio-player-video-control {
+      .video-control-top {
+        .video-progress {
+          .video-progress-slider {
+            .slider-track {
+              height 4px
+              .slider-track-thumb {
+                .thumb-dot {
+                  opacity 1
+                  transform scale(1)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 .ushio-player {
   position relative
   display flex
@@ -14,6 +39,7 @@
   z-index 66
   overflow hidden
   user-select none
+  touch-action none
 
   .hide {
     display none !important;

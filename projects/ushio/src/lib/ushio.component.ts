@@ -93,6 +93,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ContentChildren(UshioSubtitles) subtitles!: QueryList<UshioSubtitles>;
   private subtitlesSlot$ = new Subject<HTMLElement[]>();
 
+  interactMode: 'desktop' | 'mobile' = 'desktop';
   private hover = false;
   private thumbMouseDown = false;
   private volumeMouseDown = false;
@@ -207,6 +208,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   ngAfterViewInit() {
     const mouseMove$ = fromEvent(document, 'mousemove');
     const mouseUp$ = fromEvent(document, 'mouseup');
+    const touchMove$ = fromEvent(document, 'touchmove');
+    const touchStart$ = fromEvent(document, 'touchstart');
+    const touchEnd$ = fromEvent(document, 'touchEnd');
+    const mouseTouchUp$ = merge(mouseUp$, touchEnd$);
+    touchStart$.subscribe(() => {
+      this.interactMode = 'mobile';
+    });
     const mouseInArea = (e: MouseEvent, btnElement, popUpElement) => {
       const rect1 = popUpElement.getBoundingClientRect();
       const rect2 = btnElement.getBoundingClientRect();
@@ -247,7 +255,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         e.clientY < rect.bottom
           ? merge(
             of(true),
-            e.clientY < rect.bottom - 46 ? timer(750).pipe(
+            e.clientY < rect.bottom - 46 ? timer(
+              this.interactMode === 'desktop' ? 750 : 5000
+            ).pipe(
               mapTo(false)
             ) : NEVER
           )
@@ -289,9 +299,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange').subscribe(() => {
       this.mVolume = this.video.nativeElement.volume;
     });
-    const mapToRate = (element, progress, total) => map((moveEvent: MouseEvent) => {
+    const mapToRate = (element, progress, total) => map(
+      (moveEvent: MouseEvent | TouchEvent) => {
+        const eventCoordinate = moveEvent instanceof TouchEvent
+          ? moveEvent.changedTouches[0]
+          : moveEvent;
         const rect = element.getBoundingClientRect();
-        let p = progress(moveEvent, rect);
+        let p = progress(eventCoordinate, rect);
         const t = total(rect);
         if (p < 0) {
           p = 0;
@@ -301,41 +315,55 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         return p / t;
       }
     );
-    const onMouseDown$ = (element, progress, total) => {
-      return fromEvent(element, 'mousedown').pipe(
+    const onMouseTouchDown$ = (element, progress, total) => {
+      return merge(
+        fromEvent(element, 'mousedown'),
+        fromEvent(element, 'touchstart')
+      ).pipe(
         mapToRate(element, progress, total)
       );
     };
-    const onMouseDrag$ = (mouseDown$, element, progress, total) => {
-      return mouseDown$.pipe(
-        concatMap(() => {
-          return mouseMove$.pipe(
-            takeUntil(mouseUp$),
-            mapToRate(element, progress, total)
-          );
-        })
+    const onMouseTouchDrag$ = (element, progress, total) => {
+      return merge(
+        fromEvent(element, 'mousedown').pipe(
+          mapToRate(element, progress, total),
+          concatMap(() => {
+            return mouseMove$.pipe(
+              takeUntil(mouseUp$),
+              mapToRate(element, progress, total)
+            );
+          })
+        ),
+        fromEvent(element, 'touchstart').pipe(
+          mapToRate(element, progress, total),
+          concatMap(() => {
+            return touchMove$.pipe(
+              takeUntil(touchEnd$),
+              mapToRate(element, progress, total)
+            );
+          })
+        ),
       );
     };
-    const thumbMouseDown$ = onMouseDown$(
+    const thumbMouseTouchDown$ = onMouseTouchDown$(
       this.sliderTrack.nativeElement,
-      (moveEvent, rect) => (moveEvent.x - rect.left),
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     );
-    const thumbDrag$ = onMouseDrag$(
-      thumbMouseDown$,
+    const thumbTouchDrag$ = onMouseTouchDrag$(
       this.sliderTrack.nativeElement,
-      (moveEvent, rect) => (moveEvent.x - rect.left),
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     );
-    this.subscriptions.push(thumbMouseDown$.subscribe(e => {
+    this.subscriptions.push(thumbMouseTouchDown$.subscribe(e => {
       this.thumbMouseDown = true;
       this.timeUpdate.unsubscribe();
       this.currentTime = e * this.duration;
     }));
-    this.subscriptions.push(thumbDrag$.subscribe(e => {
+    this.subscriptions.push(thumbTouchDrag$.subscribe(e => {
       this.currentTime = e * this.duration;
     }));
-    this.subscriptions.push(mouseUp$.subscribe(() => {
+    this.subscriptions.push(mouseTouchUp$.subscribe(() => {
       if (this.thumbMouseDown) {
         this.video.nativeElement.currentTime = this.currentTime;
         this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate').subscribe(() => {
@@ -352,29 +380,28 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.controlHoveredChange = controlHoverStateChanged$.subscribe(e => {
       this.controlHoveredClass = e;
     });
-    const volumeMouseDown$ = onMouseDown$(
+    const volumeMouseTouchDown$ = onMouseTouchDown$(
       this.volumeBarTrack.nativeElement,
-      (moveEvent, rect) => (rect.bottom - moveEvent.y),
+      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
       (rect) => (rect.height),
     );
-    const volumeDrag$ = onMouseDrag$(
-      volumeMouseDown$,
+    const volumeTouchDrag$ = onMouseTouchDrag$(
       this.volumeBarTrack.nativeElement,
-      (moveEvent, rect) => (rect.bottom - moveEvent.y),
+      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
       (rect) => (rect.height),
     );
-    this.subscriptions.push(volumeMouseDown$.subscribe(e => {
+    this.subscriptions.push(volumeMouseTouchDown$.subscribe(e => {
       this.volumeMouseDown = true;
       this.volumeChange.unsubscribe();
       this.controlHoveredChange.unsubscribe();
       this.mVolume = e;
       this.video.nativeElement.volume = this.mVolume;
     }));
-    this.subscriptions.push(volumeDrag$.subscribe(e => {
+    this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
       this.mVolume = e;
       this.video.nativeElement.volume = this.mVolume;
     }));
-    this.subscriptions.push(mouseUp$.subscribe(() => {
+    this.subscriptions.push(mouseTouchUp$.subscribe(() => {
       if (this.volumeMouseDown) {
         this.video.nativeElement.volume = this.mVolume;
         this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange').subscribe(() => {
@@ -420,6 +447,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     );
   }
 
+  onVideoMaskClicked() {
+    if (this.interactMode === 'desktop') {
+      this.togglePlay();
+    }
+  }
+
   togglePlay() {
     if (this.video.nativeElement.paused) {
       this.video.nativeElement.play();
@@ -429,7 +462,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   toggleMute() {
-    this.video.nativeElement.muted = !this.video.nativeElement.muted;
+    if (this.interactMode === 'desktop') {
+      this.video.nativeElement.muted = !this.video.nativeElement.muted;
+    } else {
+      this.video.nativeElement.muted = false;
+    }
   }
 
   toggleLoop() {
