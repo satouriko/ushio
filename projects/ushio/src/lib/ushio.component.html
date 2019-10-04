@@ -75,7 +75,7 @@
                 <path d="M13.583 5.583A5.998 5.998 0 0 1 17 11a6 6 0 0 1-.585 2.587l1.477 1.477a8.001 8.001 0 0 0-3.446-11.286 1 1 0 0 0-.863 1.805zM18.778 18.778l-2.121-2.121-1.414-1.414-1.415-1.415L13 13l-2-2-3.889-3.889-3.889-3.889a.999.999 0 1 0-1.414 1.414L5.172 8H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1l4.188 3.35a.5.5 0 0 0 .812-.39v-3.131l2.587 2.587-.01.005a1 1 0 0 0 .86 1.806c.215-.102.424-.214.627-.333l2.3 2.3a1.001 1.001 0 0 0 1.414-1.416zM11 5.04a.5.5 0 0 0-.813-.39L8.682 5.854 11 8.172V5.04z"></path>
               </svg>
             </span>
-            <div class="volume-bar-wrap" #volumeBarWrap>
+            <div class="volume-bar-wrap" #volumePanel>
               <div class="volume-num">{{volume}}</div>
               <div class="volume-bar" #volumeBarTrack>
                 <div class="volume-bar-track">
@@ -89,13 +89,16 @@
               </div>
             </div>
           </div>
-          <div [className]="'ushio-player-btn btn-settings'">
+          <div [className]="'ushio-player-btn btn-settings'" #settingsBtn>
             <span class="ushio-player-icon icon-settings">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
                 <circle cx="11" cy="11" r="2"></circle>
                 <path d="M19.164 8.861L17.6 8.6a6.978 6.978 0 0 0-1.186-2.099l.574-1.533a1 1 0 0 0-.436-1.217l-1.997-1.153a1.001 1.001 0 0 0-1.272.23l-1.008 1.225a7.04 7.04 0 0 0-2.55.001L8.716 2.829a1 1 0 0 0-1.272-.23L5.447 3.751a1 1 0 0 0-.436 1.217l.574 1.533A6.997 6.997 0 0 0 4.4 8.6l-1.564.261A.999.999 0 0 0 2 9.847v2.306c0 .489.353.906.836.986l1.613.269a7 7 0 0 0 1.228 2.075l-.558 1.487a1 1 0 0 0 .436 1.217l1.997 1.153c.423.244.961.147 1.272-.23l1.04-1.263a7.089 7.089 0 0 0 2.272 0l1.04 1.263a1 1 0 0 0 1.272.23l1.997-1.153a1 1 0 0 0 .436-1.217l-.557-1.487c.521-.61.94-1.31 1.228-2.075l1.613-.269a.999.999 0 0 0 .835-.986V9.847a.999.999 0 0 0-.836-.986zM11 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"></path>
               </svg>
             </span>
+            <div class="btn-settings-panel" #settingsPanel [style]="settingsPanelPosition">
+
+            </div>
           </div>
           <div [className]="'ushio-player-btn btn-repeat' + repeatClass + (loopControl ? '' : ' hide')"
                (click)="toggleLoop()"

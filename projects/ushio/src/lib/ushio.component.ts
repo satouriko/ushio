@@ -40,24 +40,55 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @Input() preload = 'metadata';
   @Input() loop;
   @Input() muted;
+
+  private mVolume = 1;
   @Input() set volume(volume) {
     this.video.nativeElement.volume = volume / 100;
   }
   get volume() {
     return Math.round(this.mVolume * 100);
   }
-  @Input() volumeControl = true;
-  @Input() loopControl = true;
-  @Input() fullscreenControl = true;
-  @Input() subtitlesControl = true;
 
-  private mVolume = 1;
+  private mVolumeControl = true;
+  @Input() set volumeControl(volumeControl) {
+    this.mVolumeControl = volumeControl;
+    this.setAllControlPanelsPosition();
+  }
+  get volumeControl() {
+    return this.mVolumeControl;
+  }
+  private mSettingsControl = true;
+  @Input() set settingsControl(settingsControl) {
+    this.mSettingsControl = settingsControl;
+    this.setAllControlPanelsPosition();
+  }
+  get settingsControl() {
+    return this.mSettingsControl;
+  }
+  private mLoopControl = true;
+  @Input() set loopControl(loopControl) {
+    this.mLoopControl = loopControl;
+    this.setAllControlPanelsPosition();
+  }
+  get loopControl() {
+    return this.mLoopControl;
+  }
+  private mFullscreenControl = true;
+  @Input() set fullscreenControl(fullscreenControl) {
+    this.mFullscreenControl = fullscreenControl;
+    this.setAllControlPanelsPosition();
+  }
+  get fullscreenControl() {
+    return this.mFullscreenControl;
+  }
 
   @ViewChild('video', {static: true}) video;
   @ViewChild('sliderTrack', {static: true}) sliderTrack;
   @ViewChild('volumeBarTrack', {static: true}) volumeBarTrack;
-  @ViewChild('volumeBarWrap', {static: true}) volumeBarWrap;
+  @ViewChild('volumePanel', {static: true}) volumePanel;
   @ViewChild('volumeBtn', {static: true}) volumeBtn;
+  @ViewChild('settingsPanel', {static: true}) settingsPanel;
+  @ViewChild('settingsBtn', {static: true}) settingsBtn;
 
   @ContentChildren(UshioSubtitles) subtitles!: QueryList<UshioSubtitles>;
   private subtitlesSlot$ = new Subject<HTMLElement[]>();
@@ -130,6 +161,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get volumeThumbPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
       `bottom: ${this.volume}%`
+    );
+  }
+  private settingsPanelTranslation = 0;
+  get settingsPanelPosition(): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: translateX(${-this.settingsPanelTranslation}px)`
     );
   }
 
@@ -309,7 +346,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }));
     const controlHoverStateChanged$ = onControlBtnHoverStateChanged$([{
       btnElement: this.volumeBtn.nativeElement,
-      popUpElement: this.volumeBarWrap.nativeElement,
+      popUpElement: this.volumePanel.nativeElement,
       btnName: 'volume',
     }]);
     this.controlHoveredChange = controlHoverStateChanged$.subscribe(e => {
@@ -349,11 +386,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.volumeMouseDown = false;
       }
     }));
+    this.setAllControlPanelsPosition();
   }
 
   ngOnDestroy() {
     this.timeUpdate.unsubscribe();
     this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  private setAllControlPanelsPosition() {
+    setTimeout(() => {
+      this.setSettingsPanelPosition();
+    }, 0);
+  }
+
+  private setSettingsPanelPosition() {
+    if (!this.element || !this.settingsPanel || !this.settingsBtn) {
+      return;
+    }
+    const outer = this.element.nativeElement.getBoundingClientRect();
+    const panel = this.settingsPanel.nativeElement.getBoundingClientRect();
+    const btn = this.settingsBtn.nativeElement.getBoundingClientRect();
+    if (panel.width / 2 - outer.right + btn.right > 0) {
+      this.settingsPanelTranslation = panel.width / 2 - outer.right + btn.right;
+    } else {
+      this.settingsPanelTranslation = 0;
+    }
   }
 
   onSlotChange(e) {
