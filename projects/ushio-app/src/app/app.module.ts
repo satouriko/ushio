@@ -1,7 +1,7 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { Injector, NgModule } from '@angular/core';
-import { UshioComponent, UshioModule } from 'ushio';
-import { createCustomElement } from '@angular/elements';
+import { Injector, NgModule } from '@angular/core'
+import { createCustomElement } from '@angular/elements'
+import { BrowserModule } from '@angular/platform-browser'
+import { UshioComponent, UshioModule } from 'ushio'
 
 @NgModule({
   imports: [
@@ -10,16 +10,16 @@ import { createCustomElement } from '@angular/elements';
   ],
   providers: [],
   entryComponents: [
-    UshioComponent,
-  ],
+    UshioComponent
+  ]
 })
 export class AppModule {
-  constructor(private injector: Injector) { }
+  constructor (private injector: Injector) { }
 
-  ngDoBootstrap() {
+  ngDoBootstrap () {
     window.customElements.define(
       'ushio-player',
       createCustomElement(UshioComponent, { injector: this.injector })
-    );
+    )
   }
 }

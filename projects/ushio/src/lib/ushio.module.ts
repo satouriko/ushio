@@ -1,20 +1,21 @@
-import { NgModule } from '@angular/core';
-import { UshioComponent, UshioSource, UshioSubtitles } from './ushio.component';
-import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common'
+import { NgModule } from '@angular/core'
+
+import { UshioComponent, UshioSource, UshioSubtitles } from './ushio.component'
 
 @NgModule({
   declarations: [
     UshioComponent,
     UshioSource,
-    UshioSubtitles,
+    UshioSubtitles
   ],
   imports: [
-    CommonModule,
+    CommonModule
   ],
   exports: [
     UshioComponent,
     UshioSource,
-    UshioSubtitles,
-  ],
+    UshioSubtitles
+  ]
 })
 export class UshioModule { }

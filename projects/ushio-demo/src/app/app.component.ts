@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core'
 
 @Component({
   selector: 'app-root',
@@ -6,8 +6,8 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./app.component.styl']
 })
 export class AppComponent implements OnInit {
-  title = 'ushio-demo';
+  title = 'ushio-demo'
 
-  ngOnInit() {
+  ngOnInit () {
   }
 }

@@ -1,12 +1,12 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing'
 
-import { UshioService } from './ushio.service';
+import { UshioService } from './ushio.service'
 
 describe('UshioService', () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+  beforeEach(() => TestBed.configureTestingModule({}))
 
   it('should be created', () => {
-    const service: UshioService = TestBed.get(UshioService);
-    expect(service).toBeTruthy();
-  });
-});
+    const service: UshioService = TestBed.get(UshioService)
+    expect(service).toBeTruthy()
+  })
+})
