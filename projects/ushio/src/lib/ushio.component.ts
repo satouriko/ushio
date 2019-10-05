@@ -13,8 +13,9 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import {
-  fromEvent, merge, NEVER, of,
-  Subject, Subscription, timer } from 'rxjs';
+  fromEvent, merge, NEVER, Observable, of,
+  Subject, Subscription, timer,
+} from 'rxjs';
 import {
   concatMap, distinctUntilChanged,
   filter, map, mapTo, switchMap, takeUntil
@@ -23,11 +24,34 @@ import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
 @Directive({
   // tslint:disable-next-line:directive-selector
+  selector: 'ushio-source'
+})
+// tslint:disable-next-line:directive-class-suffix
+export class UshioSource {
+  @Input() src!: string;
+  @Input() type: string;
+  @Input() shortname: string;
+  @Input() name: string;
+  @Input() default: string;
+}
+
+@Directive({
+  // tslint:disable-next-line:directive-selector
   selector: 'ushio-subtitles'
 })
 // tslint:disable-next-line:directive-class-suffix
 export class UshioSubtitles {
-  @Input() value !: string;
+  @Input() value!: string;
+}
+
+interface Source {
+  shortName: string;
+  name: string;
+  sources: {
+    src: string;
+    type: string;
+  }[];
+  default?: boolean;
 }
 
 @Component({
@@ -38,13 +62,24 @@ export class UshioSubtitles {
 })
 export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, OnDestroy {
 
-  @Input() src;
+  @Input() set src(src) {
+    this.mSrc = src;
+    this.updateSources();
+  }
+  get src() {
+    return this.mSrc;
+  }
   @Input() poster;
   @Input() crossorigin;
   @Input() autoplay;
   @Input() preload = 'metadata';
   @Input() loop;
   @Input() muted;
+
+  private mSrc;
+  private mSources = [];
+  sources: Source[] = [];
+  playingSource = 0;
 
   private mVolume = 1;
   @Input() set volume(volume) {
@@ -104,8 +139,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ViewChild('settingsBtn', {static: true}) settingsBtn;
   @ViewChild('speedBar', {static: true}) speedBar;
 
-  @ContentChildren(UshioSubtitles) subtitles!: QueryList<UshioSubtitles>;
+  @ContentChildren(UshioSource) sourceContentChildren!: QueryList<UshioSource>;
+  @ContentChildren(UshioSubtitles) subtitlesContentChildren!: QueryList<UshioSubtitles>;
   private subtitlesSlotUpdate$ = new Subject<HTMLElement[]>();
+  private sourcesSlotUpdate$ = new Subject<HTMLElement[]>();
+  private subtitlesSlotChange$ = this.subtitlesSlotUpdate$.asObservable().pipe(distinctUntilChanged());
+  private sourcesSlotChange$ = this.sourcesSlotUpdate$.asObservable().pipe(distinctUntilChanged());
   private mobileShowControlStateChange$ = new Subject<{ showControl: boolean, delaySwitch: boolean }>();
 
   interactMode: 'desktop' | 'mobile' = 'desktop';
@@ -215,22 +254,41 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   ngAfterContentInit() {
-    const subtitlesChange$ = merge(
-      of(this.subtitles.map(item => item.value)),
-      this.subtitles.changes.pipe(
-        map(subtitles => (
-          subtitles.toArray().filter(s => s.value).map(s => s.value)
-        ))
-      ),
-      this.subtitlesSlotUpdate$.pipe(
-        map(subtitles => (
-          subtitles.filter(s => s.getAttribute('value'))
-            .map(s => s.getAttribute('value'))
-        ))
-      )
+    const mapPropsToObject = (props: string[], fn) => (sourceObj: any) => (
+      props.reduce((agg, cur) =>  ({...agg, [cur]: fn(sourceObj, cur)}), {})
     );
+    const onContentChildrenOrSlotChanged$ = (
+      attr, contentChildren:
+      QueryList<any>,
+      slotChange$: Observable<HTMLElement[]>
+    ) => {
+      const contentChildrenMap = mapPropsToObject(attr, (obj, cur) => (obj[cur]));
+      const slotMap = mapPropsToObject(attr, (obj, cur) => (obj.getAttribute(cur)));
+      return merge(
+        of(contentChildren.toArray().map(contentChildrenMap)),
+        contentChildren.changes.pipe(
+          map((contents: QueryList<any>) => (contents.toArray().map(contentChildrenMap)))
+        ),
+        slotChange$.pipe(
+          map((contents: HTMLElement[]) => (
+            contents.map(slotMap)
+          ))
+        )
+      );
+    };
+    const subtitlesAttr = ['value'];
+    const subtitlesChange$ = onContentChildrenOrSlotChanged$(
+      subtitlesAttr, this.subtitlesContentChildren, this.subtitlesSlotChange$);
     this.subscriptions.push(subtitlesChange$.subscribe((subtitles) => {
       console.log(subtitles);
+    }));
+    const sourcesAttr = ['src', 'type', 'name', 'shortname', 'default'];
+    const sourcesChange$ = onContentChildrenOrSlotChanged$(
+      sourcesAttr, this.sourceContentChildren, this.sourcesSlotChange$);
+    this.subscriptions.push(sourcesChange$.subscribe((sources) => {
+      console.log(sources);
+      this.mSources = sources;
+      this.updateSources();
     }));
   }
 
@@ -505,6 +563,39 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
+  private updateSources() {
+    if (this.mSources.length === 0) {
+      this.sources = [{
+        shortName: 'Default',
+        name: 'Default',
+        default: true,
+        sources: [{ src: this.mSrc, type: undefined }]
+      }];
+    } else {
+      const sm = {};
+      this.mSources.forEach(source => {
+        if (!source.shortname) {
+          source.shortname = 'Untitled';
+        }
+        if (!sm[source.shortname]) {
+          sm[source.shortname] = {
+            shortName: source.shortname,
+            name: source.name || 'Untitled',
+            sources: []
+          };
+        }
+        sm[source.shortname].sources.push(source);
+        if (source.default !== undefined) {
+          sm[source.shortname].default = true;
+        }
+      });
+      this.sources = Object.values(sm);
+    }
+    console.log(this.sources);
+    const indexOfDefault = this.sources.findIndex(s => s.default);
+    this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0;
+  }
+
   private setAllControlPanelsPosition() {
     setTimeout(() => {
       this.setSettingsPanelPosition();
@@ -528,6 +619,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   onSlotChange(e) {
     this.subtitlesSlotUpdate$.next(
       e.target.assignedNodes().filter(node => node.nodeName === 'USHIO-SUBTITLES')
+    );
+    this.sourcesSlotUpdate$.next(
+      e.target.assignedNodes().filter(node => node.nodeName === 'USHIO-SOURCE')
     );
   }
 
