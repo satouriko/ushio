@@ -54,6 +54,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return Math.round(this.mVolume * 100);
   }
 
+  private mPlaybackRate = 1;
+  @Input() set playbackRate(playbackRate) {
+    this.video.nativeElement.playbackRate = playbackRate;
+  }
+  get playbackRate() {
+    return this.mPlaybackRate;
+  }
+
   private mVolumeControl = true;
   @Input() set volumeControl(volumeControl) {
     this.mVolumeControl = volumeControl;
@@ -88,12 +96,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   @ViewChild('video', {static: true}) video;
-  @ViewChild('sliderTrack', {static: true}) sliderTrack;
-  @ViewChild('volumeBarTrack', {static: true}) volumeBarTrack;
+  @ViewChild('slider', {static: true}) slider;
+  @ViewChild('volumeBar', {static: true}) volumeBar;
   @ViewChild('volumePanel', {static: true}) volumePanel;
   @ViewChild('volumeBtn', {static: true}) volumeBtn;
   @ViewChild('settingsPanel', {static: true}) settingsPanel;
   @ViewChild('settingsBtn', {static: true}) settingsBtn;
+  @ViewChild('speedBar', {static: true}) speedBar;
 
   @ContentChildren(UshioSubtitles) subtitles!: QueryList<UshioSubtitles>;
   private subtitlesSlotUpdate$ = new Subject<HTMLElement[]>();
@@ -102,13 +111,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   interactMode: 'desktop' | 'mobile' = 'desktop';
   private showControl = false;
   private thumbMouseDown = false;
-  private volumeMouseDown = false;
+  private controlMouseDown = false;
   controlHoveredClass = '';
   get isFullScreen(): boolean {
     return document.fullscreenElement !== null;
   }
   get mouseDown(): boolean {
-    return this.thumbMouseDown || this.volumeMouseDown;
+    return this.thumbMouseDown || this.controlMouseDown;
   }
   get showControlClass(): string {
     return (this.showControl || this.controlHoveredClass || this.mouseDown) ? ' mouse-hover' : '';
@@ -135,6 +144,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get fullscreenClass(): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen';
   }
+  private paused = true;
   private currentTime = 0;
   private duration = 0;
   private bufferedTime = 0;
@@ -170,6 +180,19 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       `bottom: ${this.volume}%`
     );
   }
+  private readonly speedProgressMap = {
+    0.5: 0,
+    0.75: 20,
+    1: 40,
+    1.25: 60,
+    1.5: 80,
+    2.0: 100,
+  };
+  get speedThumbPosition(): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `left: ${this.speedProgressMap[this.playbackRate + '']}%`
+    );
+  }
   private settingsPanelTranslation = 0;
   get settingsPanelPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
@@ -178,7 +201,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   private timeUpdate: Subscription;
-  private volumeChange: Subscription;
   private controlHoveredChange: Subscription;
   private subscriptions: Subscription[] = [];
 
@@ -189,6 +211,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   ngOnInit() {
     this.mVolume = this.video.nativeElement.volume;
+    this.mPlaybackRate = this.video.nativeElement.playbackRate;
   }
 
   ngAfterContentInit() {
@@ -314,10 +337,15 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.duration = this.video.nativeElement.duration;
       }));
     this.video.nativeElement.volume = this.mVolume;
-    this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange')
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'volumechange')
       .subscribe(() => {
         this.mVolume = this.video.nativeElement.volume;
-      });
+      }));
+    this.video.nativeElement.playbackRate = this.mPlaybackRate;
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'ratechange')
+      .subscribe(() => {
+        this.mPlaybackRate = this.video.nativeElement.playbackRate;
+      }));
     const mapToRate = (element, progress, total) => map(
       (moveEvent: MouseEvent | TouchEvent) => {
         const eventCoordinate = moveEvent instanceof TouchEvent
@@ -365,12 +393,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       );
     };
     const thumbMouseTouchDown$ = onMouseTouchDown$(
-      this.sliderTrack.nativeElement,
+      this.slider.nativeElement,
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     );
     const thumbTouchDrag$ = onMouseTouchDrag$(
-      this.sliderTrack.nativeElement,
+      this.slider.nativeElement,
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     );
@@ -396,43 +424,78 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       btnElement: this.volumeBtn.nativeElement,
       popUpElement: this.volumePanel.nativeElement,
       btnName: 'volume',
+    }, {
+      btnElement: this.settingsBtn.nativeElement,
+      popUpElement: this.settingsPanel.nativeElement,
+      btnName: 'settings',
     }]);
     this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
       this.controlHoveredClass = e;
+      this.setAllControlPanelsPosition();
     });
     const volumeMouseTouchDown$ = onMouseTouchDown$(
-      this.volumeBarTrack.nativeElement,
+      this.volumeBar.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
       (rect) => (rect.height),
     );
     const volumeTouchDrag$ = onMouseTouchDrag$(
-      this.volumeBarTrack.nativeElement,
+      this.volumeBar.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
       (rect) => (rect.height),
     );
     this.subscriptions.push(volumeMouseTouchDown$.subscribe(e => {
-      this.volumeMouseDown = true;
-      this.volumeChange.unsubscribe();
-      this.controlHoveredChange.unsubscribe();
-      this.mVolume = e;
-      this.video.nativeElement.volume = this.mVolume;
+      if (!this.controlMouseDown) {
+        this.controlMouseDown = true;
+        this.controlHoveredChange.unsubscribe();
+      }
+      this.video.nativeElement.volume = e;
     }));
     this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
-      this.mVolume = e;
-      this.video.nativeElement.volume = this.mVolume;
+      this.video.nativeElement.volume = e;
     }));
     this.subscriptions.push(mouseTouchUp$.subscribe(() => {
-      if (this.volumeMouseDown) {
-        this.video.nativeElement.volume = this.mVolume;
-        this.volumeChange = fromEvent(this.video.nativeElement, 'volumechange')
-          .subscribe(() => {
-            this.mVolume = this.video.nativeElement.volume;
-          });
+      if (this.controlMouseDown) {
         this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
           this.controlHoveredClass = e;
+          this.setAllControlPanelsPosition();
         });
-        this.volumeMouseDown = false;
+        this.controlMouseDown = false;
       }
+    }));
+    const speedMouseTouchDown$ = onMouseTouchDown$(
+      this.speedBar.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width),
+    );
+    const speedTouchDrag$ = onMouseTouchDrag$(
+      this.speedBar.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width),
+    );
+    const mapProgressToSpeed = e => {
+      if (e < .1) {
+        return .5;
+      } else if (e < .3) {
+        return .75;
+      } else if (e < .5) {
+        return 1;
+      } else if (e < .7) {
+        return 1.25;
+      } else if (e < .9) {
+        return 1.5;
+      } else {
+        return 2;
+      }
+    };
+    this.subscriptions.push(speedMouseTouchDown$.subscribe(e => {
+      if (!this.controlMouseDown) {
+        this.controlMouseDown = true;
+        this.controlHoveredChange.unsubscribe();
+      }
+      this.video.nativeElement.playbackRate = mapProgressToSpeed(e);
+    }));
+    this.subscriptions.push(speedTouchDrag$.subscribe(e => {
+      this.video.nativeElement.playbackRate = mapProgressToSpeed(e);
     }));
     this.setAllControlPanelsPosition();
   }
@@ -468,7 +531,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     );
   }
 
-  onVideoMaskClicked(e) {
+  onVideoMaskClicked() {
     if (this.interactMode === 'desktop') {
       this.togglePlay();
     } else {

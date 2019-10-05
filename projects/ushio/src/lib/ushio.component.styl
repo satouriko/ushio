@@ -330,11 +330,11 @@
           }
         }
 
-        .btn-volume-hover .btn-volume .volume-bar-wrap {
+        .btn-volume-hover .btn-volume .btn-volume-panel {
           display block
         }
 
-        .btn-volume .volume-bar-wrap {
+        .btn-volume .btn-volume-panel {
           display none
           position absolute
           cursor default
@@ -397,93 +397,96 @@
                 position relative
                 left -5px
                 transform translateY(50%)
-
-                .thumb-dot {
-                  transition all .2s
-                }
               }
             }
           }
         }
 
-        .btn-settings {
-          .btn-settings-panel {
-            cursor default
-            color #fff
-            width 266px
-            box-sizing border-box
-            background rgba(21,21,21,.9)
-            border-radius 2px
-            position absolute
-            bottom 41px
-            right -113px
-            padding 12px 20px
-            text-align left
-            font-size 12px
+        .btn-settings-hover .btn-settings .btn-settings-panel {
+          display block
+        }
 
-            .panel-speed-content {
-              margin-top 20px
-              height 12px
-              cursor pointer
+        .btn-settings .btn-settings-panel {
+          display none
+          cursor default
+          color #fff
+          width 266px
+          box-sizing border-box
+          background rgba(21,21,21,.9)
+          border-radius 2px
+          position absolute
+          bottom 41px
+          right -113px
+          padding 12px 20px
+          text-align left
+          font-size 12px
+          transition all 0.05s
+
+          .speed-bar {
+            cursor pointer
+          }
+
+          .panel-speed-content.panel-box-content {
+            margin 20px 6px 0 6px
+            width calc(100% - 12px)
+            height 12px
+            display flex
+            align-items center
+            justify-content center
+            .speed-track {
+              position relative
+              width 100%
+              height 2px
               display flex
               align-items center
-              justify-content center
-              .speed-track {
-                position relative
-                margin 0 6px
+              .speed-track-wrap {
+                background #505050
+                position absolute
+                top 0
+                bottom 0
+                border-radius 1.5px
+                overflow hidden
                 width 100%
-                height 2px
-                display flex
-                align-items center
-                .speed-track-wrap {
-                  background #505050
+              }
+              .speed-track-steps {
+                position relative
+                width 100%
+                .speed-track-steps-item {
                   position absolute
-                  top 0
-                  bottom 0
-                  border-radius 1.5px
-                  overflow hidden
-                  width 100%
-                }
-                .speed-track-steps {
-                  position relative
-                  width 100%
-                  .speed-track-steps-item {
+                  width 0
+                  &.step-item-0 .step-text {
+                    text-align left
+                    transform translate(-6px,-50%)
+                  }
+                  &.step-item-100 .step-text {
+                    transform translate(-94px,-50%)
+                    text-align right
+                  }
+                  .step-dot {
+                    background #505050
+                    height 4px
+                    width 2px
+                    border-radius 1px
+                    transform: translate(-50%,-50%);
+                  }
+                  .step-text {
+                    cursor default
+                    color hsla(0,0%,100%,.8)
                     position absolute
-                    width 0
-                    &.step-item-0 .step-text {
-                      text-align left
-                      transform translate(-6px,-50%)
-                    }
-                    &.step-item-100 .step-text {
-                      transform translate(-94px,-50%)
-                      text-align right
-                    }
-                    .step-dot {
-                      background #505050
-                      height 4px
-                      width 2px
-                      border-radius 1px
-                      transform: translate(-50%,-50%);
-                    }
-                    .step-text {
-                      cursor default
-                      color hsla(0,0%,100%,.8)
-                      position absolute
-                      bottom 6px
-                      left 50%
-                      width 100px
-                      text-align: center
-                      font-size 12px
-                      transform translate(-50%,-50%)
-                      line-height 12px
-                    }
+                    bottom 6px
+                    left 50%
+                    width 100px
+                    text-align: center
+                    font-size 12px
+                    transform translate(-50%,-50%)
+                    line-height 12px
                   }
                 }
-                .speed-track-thumb {
-                  cursor pointer
-                  position absolute
-                  transform translateX(-50%)
-                }
+              }
+              .speed-track-thumb {
+                cursor pointer
+                position absolute
+                transform translateX(-50%)
               }
             }
           }
