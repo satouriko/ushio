@@ -97,7 +97,45 @@
               </svg>
             </span>
             <div class="btn-settings-panel" #settingsPanel [style]="settingsPanelPosition">
-
+              <div class="panel-box settings-panel-speed">
+                <div class="panel-box-title">
+                  播放速度
+                </div>
+                <div class="panel-box-content panel-speed-content">
+                  <div class="speed-track">
+                    <div class="speed-track-wrap"></div>
+                    <div class="speed-track-steps">
+                      <div class="speed-track-steps-item step-item-0" style="left: 0">
+                        <div class="step-dot"></div>
+                        <div class="step-text">0.5</div>
+                      </div>
+                      <div class="speed-track-steps-item" style="left: 20%">
+                        <div class="step-dot"></div>
+                        <div class="step-text">0.75</div>
+                      </div>
+                      <div class="speed-track-steps-item" style="left: 40%">
+                        <div class="step-dot"></div>
+                        <div class="step-text">正常</div>
+                      </div>
+                      <div class="speed-track-steps-item" style="left: 60%">
+                        <div class="step-dot"></div>
+                        <div class="step-text">1.25</div>
+                      </div>
+                      <div class="speed-track-steps-item" style="left: 80%">
+                        <div class="step-dot"></div>
+                        <div class="step-text">1.5</div>
+                      </div>
+                      <div class="speed-track-steps-item step-item-100" style="left: 100%">
+                        <div class="step-dot"></div>
+                        <div class="step-text">2.0</div>
+                      </div>
+                    </div>
+                    <div class="speed-track-thumb">
+                      <div class="thumb-dot ushio-theme"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div [className]="'ushio-player-btn btn-repeat' + repeatClass + (loopControl ? '' : ' hide')"
