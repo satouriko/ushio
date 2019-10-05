@@ -97,7 +97,7 @@
               <ul>
                 <li *ngFor="let source of sources; index as i"
                     (click)="onSelectSource(i)"
-                    [className]="playingSource === i ? 'ushio-theme-color' : ''"
+                    [className]="playingSource === i ? 'selected ushio-theme-color' : ''"
                 >
                   {{ source.name }}
                 </li>

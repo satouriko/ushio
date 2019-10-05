@@ -695,6 +695,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   onSelectSource (i) {
+    if (i === this.playingSource) return
     const currentTime = this.mCurrentTime
     const paused = this.mPaused
     this.playingSource = i
