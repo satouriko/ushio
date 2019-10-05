@@ -4,10 +4,10 @@ import {
   Component,
   ContentChildren,
   Directive,
-  ElementRef,
+  ElementRef, EventEmitter,
   Input,
   OnDestroy,
-  OnInit,
+  OnInit, Output,
   QueryList,
   ViewChild,
   ViewEncapsulation,
@@ -73,8 +73,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @Input() crossorigin;
   @Input() autoplay;
   @Input() preload = 'metadata';
-  @Input() loop;
-  @Input() muted;
 
   private mSrc;
   private mSources = [];
@@ -83,19 +81,18 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   private mVolume = 1;
   @Input() set volume(volume) {
-    this.video.nativeElement.volume = volume / 100;
+    this.video.nativeElement.volume = volume;
   }
-  get volume() {
+  get volume100() {
     return Math.round(this.mVolume * 100);
   }
+  @Output() volumeChange = new EventEmitter<number>();
 
   private mPlaybackRate = 1;
   @Input() set playbackRate(playbackRate) {
     this.video.nativeElement.playbackRate = playbackRate;
   }
-  get playbackRate() {
-    return this.mPlaybackRate;
-  }
+  @Output() playbackRateChange = new EventEmitter<number>();
 
   private mVolumeControl = true;
   @Input() set volumeControl(volumeControl) {
@@ -168,10 +165,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return this.thumbMouseDown ? ' thumb-mouse-down' : '';
   }
   get pausedClass(): string {
-    return this.video.nativeElement.paused ? ' video-state-pause' : ' video-state-play';
+    return this.mPaused ? ' video-state-pause' : ' video-state-play';
   }
-  get pendingClass(): string {
-    return this.pending && !this.video.nativeElement.paused ? ' video-state-pending' : '';
+  get waitingClass(): string {
+    return this.waiting && !this.mPaused ? ' video-state-waiting' : '';
   }
   get mutedClass(): string {
     return (this.video.nativeElement.muted || this.video.nativeElement.volume === 0)
@@ -183,16 +180,39 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get fullscreenClass(): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen';
   }
-  private paused = true;
-  private currentTime = 0;
+
+  private mPaused = true;
+  @Input() set paused(paused) {
+    if (paused) {
+      this.video.nativeElement.pause();
+    } else {
+      this.video.nativeElement.play();
+    }
+  }
+  @Output() pausedChange = new EventEmitter<boolean>();
+  private mCurrentTime = 0;
+  @Input() set currentTime(currentTime) {
+    this.video.nativeElement.currentTime = currentTime;
+  }
+  @Output() currentTimeChange = new EventEmitter<number>();
   private duration = 0;
   private bufferedTime = 0;
-  private pending = false;
+  private waiting = false;
+  @Output() waitingChange = new EventEmitter<boolean>();
+  @Input() set loop(loop) {
+    this.video.nativeElement.loop = loop;
+  }
+  @Output() loopChange = new EventEmitter<boolean>();
+  @Input() set muted(muted) {
+    this.video.nativeElement.muted = muted;
+  }
+  @Output() mutedChange = new EventEmitter<boolean>();
+
   get currentTimeStr(): string {
-    return this.formatDuration(this.currentTime);
+    return UshioComponent.formatDuration(this.mCurrentTime);
   }
   get durationStr(): string {
-    return this.formatDuration(this.duration);
+    return UshioComponent.formatDuration(this.duration);
   }
   get bufferedProgress(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
@@ -201,12 +221,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get playedProgress(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `transform: scaleX(${this.currentTime / this.duration})`
+      `transform: scaleX(${this.mCurrentTime / this.duration})`
     );
   }
   get thumbPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `left: ${this.currentTime / this.duration * 100}%`
+      `left: ${this.mCurrentTime / this.duration * 100}%`
     );
   }
   get volumeRate(): SafeStyle {
@@ -216,20 +236,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get volumeThumbPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `bottom: ${this.volume}%`
+      `bottom: ${this.volume100}%`
     );
   }
-  private readonly speedProgressMap = {
-    0.5: 0,
-    0.75: 20,
-    1: 40,
-    1.25: 60,
-    1.5: 80,
-    2.0: 100,
-  };
   get speedThumbPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `left: ${this.speedProgressMap[this.playbackRate + '']}%`
+      `left: ${UshioComponent.mapSpeedToProgress(this.mPlaybackRate)}%`
     );
   }
   private settingsPanelTranslation = 0;
@@ -243,12 +255,45 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private controlHoveredChange: Subscription;
   private subscriptions: Subscription[] = [];
 
+  static mapSpeedToProgress(speed) {
+    if (speed < 0.5) {
+      return 0;
+    } else if (speed < 1.5) {
+      return (speed - 0.5) * 80;
+    } else if (speed < 2.0) {
+      return 80 + (speed - 1.5) * 40;
+    } else {
+      return 100;
+    }
+  }
+  static mapProgressToSpeed(progress) {
+    if (progress < .1) {
+      return .5;
+    } else if (progress < .9) {
+      return .75 + .25 * Math.floor((progress - 0.1) * 5);
+    } else {
+      return 2;
+    }
+  }
+
+  static formatDuration(duration: number) {
+    const h = Math.floor(duration / 3600);
+    const m = Math.floor(duration % 3600 / 60);
+    const s = Math.floor(duration % 60);
+    let str = '';
+    if (h && h < 10) { str += `0${h}:`; } else if (h) { str += `${h}:`; }
+    if (m < 10) { str += `0${m}:`; } else { str += `${m}:`; }
+    if (s < 10) { str += `0${s}`;  } else { str += `${s}`; }
+    return str;
+  }
+
   constructor(
     private element: ElementRef,
     private sanitization: DomSanitizer
   ) { }
 
   ngOnInit() {
+    this.mPaused = this.video.nativeElement.paused;
     this.mVolume = this.video.nativeElement.volume;
     this.mPlaybackRate = this.video.nativeElement.playbackRate;
   }
@@ -362,17 +407,35 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(showControlStateChange$.subscribe(state => {
       this.showControl = state;
     }));
+    if (this.mPaused) {
+      this.video.nativeElement.pause();
+    } else {
+      this.video.nativeElement.play();
+    }
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'pause')
+      .subscribe(() => {
+        this.mPaused = true;
+        this.pausedChange.emit(true);
+      }));
+    this.subscriptions.push(fromEvent(this.video.nativeElement, 'play')
+      .subscribe(() => {
+        this.mPaused = false;
+        this.pausedChange.emit(false);
+      }));
     this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
       .subscribe(() => {
-        this.currentTime = this.video.nativeElement.currentTime;
+        this.mCurrentTime = this.video.nativeElement.currentTime;
+        this.currentTimeChange.emit(this.mCurrentTime);
       });
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting')
       .subscribe(() => {
-        this.pending = true;
+        this.waiting = true;
+        this.waitingChange.emit(this.waiting);
       }));
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'playing')
       .subscribe(() => {
-        this.pending = false;
+        this.waiting = false;
+        this.waitingChange.emit(this.waiting);
       }));
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'progress')
       .subscribe(() => {
@@ -398,11 +461,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'volumechange')
       .subscribe(() => {
         this.mVolume = this.video.nativeElement.volume;
+        this.volumeChange.emit(this.mVolume);
       }));
     this.video.nativeElement.playbackRate = this.mPlaybackRate;
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'ratechange')
       .subscribe(() => {
         this.mPlaybackRate = this.video.nativeElement.playbackRate;
+        this.playbackRateChange.emit(this.mPlaybackRate);
       }));
     const mapToRate = (element, progress, total) => map(
       (moveEvent: MouseEvent | TouchEvent) => {
@@ -463,17 +528,17 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(thumbMouseTouchDown$.subscribe(e => {
       this.thumbMouseDown = true;
       this.timeUpdate.unsubscribe();
-      this.currentTime = e * this.duration;
+      this.mCurrentTime = e * this.duration;
     }));
     this.subscriptions.push(thumbTouchDrag$.subscribe(e => {
-      this.currentTime = e * this.duration;
+      this.mCurrentTime = e * this.duration;
     }));
     this.subscriptions.push(mouseTouchUp$.subscribe(() => {
       if (this.thumbMouseDown) {
-        this.video.nativeElement.currentTime = this.currentTime;
+        this.video.nativeElement.currentTime = this.mCurrentTime;
         this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
           .subscribe(() => {
-            this.currentTime = this.video.nativeElement.currentTime;
+            this.mCurrentTime = this.video.nativeElement.currentTime;
           });
         this.thumbMouseDown = false;
       }
@@ -530,30 +595,15 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width),
     );
-    const mapProgressToSpeed = e => {
-      if (e < .1) {
-        return .5;
-      } else if (e < .3) {
-        return .75;
-      } else if (e < .5) {
-        return 1;
-      } else if (e < .7) {
-        return 1.25;
-      } else if (e < .9) {
-        return 1.5;
-      } else {
-        return 2;
-      }
-    };
     this.subscriptions.push(speedMouseTouchDown$.subscribe(e => {
       if (!this.controlMouseDown) {
         this.controlMouseDown = true;
         this.controlHoveredChange.unsubscribe();
       }
-      this.video.nativeElement.playbackRate = mapProgressToSpeed(e);
+      this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
     }));
     this.subscriptions.push(speedTouchDrag$.subscribe(e => {
-      this.video.nativeElement.playbackRate = mapProgressToSpeed(e);
+      this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
     }));
     this.setAllControlPanelsPosition();
   }
@@ -647,13 +697,16 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   toggleMute() {
     if (this.interactMode === 'desktop') {
       this.video.nativeElement.muted = !this.video.nativeElement.muted;
-    } else {
+      this.mutedChange.emit(this.video.nativeElement.muted);
+    } else if (this.video.nativeElement.muted) {
       this.video.nativeElement.muted = false;
+      this.mutedChange.emit(false);
     }
   }
 
   toggleLoop() {
     this.video.nativeElement.loop = !this.video.nativeElement.loop;
+    this.loopChange.emit(this.video.nativeElement.loop);
   }
 
   toggleFullscreen() {
@@ -662,17 +715,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     } else {
       document.exitFullscreen();
     }
-  }
-
-  private formatDuration = (duration: number): string => {
-    const h = Math.floor(duration / 3600);
-    const m = Math.floor(duration % 3600 / 60);
-    const s = Math.floor(duration % 60);
-    let str = '';
-    if (h && h < 10) { str += `0${h}:`; } else if (h) { str += `${h}:`; }
-    if (m < 10) { str += `0${m}:`; } else { str += `${m}:`; }
-    if (s < 10) { str += `0${s}`;  } else { str += `${s}`; }
-    return str;
   }
 
 }
