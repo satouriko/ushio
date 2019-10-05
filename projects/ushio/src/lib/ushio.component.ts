@@ -102,6 +102,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get volumeControl() {
     return this.mVolumeControl;
   }
+  private mSourceControl = true;
+  @Input() set sourceControl(sourceControl) {
+    this.mSourceControl = sourceControl;
+    this.setAllControlPanelsPosition();
+  }
+  get sourceControl() {
+    return this.mSourceControl;
+  }
   private mSettingsControl = true;
   @Input() set settingsControl(settingsControl) {
     this.mSettingsControl = settingsControl;
@@ -135,6 +143,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ViewChild('settingsPanel', {static: true}) settingsPanel;
   @ViewChild('settingsBtn', {static: true}) settingsBtn;
   @ViewChild('speedBar', {static: true}) speedBar;
+  @ViewChild('sourcePanel', {static: true}) sourcePanel;
+  @ViewChild('sourceBtn', {static: true}) sourceBtn;
 
   @ContentChildren(UshioSource) sourceContentChildren!: QueryList<UshioSource>;
   @ContentChildren(UshioSubtitles) subtitlesContentChildren!: QueryList<UshioSubtitles>;
@@ -244,10 +254,18 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       `left: ${UshioComponent.mapSpeedToProgress(this.mPlaybackRate)}%`
     );
   }
-  private settingsPanelTranslation = 0;
+  private panelTranslations = {
+    settings: 0,
+    source: 0
+  };
   get settingsPanelPosition(): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `transform: translateX(${-this.settingsPanelTranslation}px)`
+      `transform: translateX(calc(${-this.panelTranslations.settings}px - 50%))`
+    );
+  }
+  get sourcePanelPosition(): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: translateX(calc(${-this.panelTranslations.source}px - 50%))`
     );
   }
 
@@ -551,6 +569,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       btnElement: this.settingsBtn.nativeElement,
       popUpElement: this.settingsPanel.nativeElement,
       btnName: 'settings',
+    }, {
+      btnElement: this.sourceBtn.nativeElement,
+      popUpElement: this.sourcePanel.nativeElement,
+      btnName: 'source',
     }]);
     this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
       this.controlHoveredClass = e;
@@ -648,21 +670,29 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   private setAllControlPanelsPosition() {
     setTimeout(() => {
-      this.setSettingsPanelPosition();
+      [{
+        btn: this.settingsBtn,
+        panel: this.settingsPanel,
+        name: 'settings'
+      }, {
+        btn: this.sourceBtn,
+        panel: this.sourcePanel,
+        name: 'source'
+      }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name));
     }, 0);
   }
 
-  private setSettingsPanelPosition() {
-    if (!this.element || !this.settingsPanel || !this.settingsBtn) {
+  private setPanelPosition(btn, panel, name) {
+    if (!this.element || !panel || !btn) {
       return;
     }
-    const outer = this.element.nativeElement.getBoundingClientRect();
-    const panel = this.settingsPanel.nativeElement.getBoundingClientRect();
-    const btn = this.settingsBtn.nativeElement.getBoundingClientRect();
-    if (panel.width / 2 - outer.right + btn.right > 0) {
-      this.settingsPanelTranslation = panel.width / 2 - outer.right + btn.right;
+    const outerRect = this.element.nativeElement.getBoundingClientRect();
+    const panelRect = panel.nativeElement.getBoundingClientRect();
+    const btnRect = btn.nativeElement.getBoundingClientRect();
+    if (panelRect.width / 2 - outerRect.right + btnRect.right > 0) {
+      this.panelTranslations[name] = panelRect.width / 2 - outerRect.right + btnRect.right;
     } else {
-      this.settingsPanelTranslation = 0;
+      this.panelTranslations[name] = 0;
     }
   }
 
@@ -683,6 +713,17 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         showControl: !this.showControl,
         delaySwitch: true
       });
+    }
+  }
+
+  onSelectSource(i) {
+    const currentTime = this.mCurrentTime;
+    const paused = this.mPaused;
+    this.playingSource = i;
+    this.video.nativeElement.load();
+    this.video.nativeElement.currentTime = currentTime;
+    if (!paused) {
+      this.video.nativeElement.play();
     }
   }
 

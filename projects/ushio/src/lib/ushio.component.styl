@@ -33,6 +33,21 @@
 }
 
 .ushio-player {
+  .control-panel {
+    cursor default
+    color #fff
+    box-sizing border-box
+    background rgba(21, 21, 21, .9)
+    border-radius 2px
+    position absolute
+    bottom 41px
+    left 50%
+    transform translateX(-50%)
+    padding 12px 20px
+    text-align left
+    font-size 12px
+    transition all 0.05s
+  }
   .panel-box {
     width 100%
 
@@ -62,8 +77,12 @@
     display none !important;
   }
 
-  .ushio-theme {
+  .ushio-theme-background {
     background #00a1d6
+  }
+
+  .ushio-theme-color {
+    color #00a1d6
   }
 
   .thumb-dot {
@@ -312,6 +331,13 @@
           }
         }
 
+        .btn-source {
+          font-size 1em
+          padding 0 10.75px
+          width auto
+          position relative
+        }
+
         .btn-volume.video-state-muted {
           .icon-volume-max {
             display none
@@ -402,25 +428,41 @@
           }
         }
 
+        .btn-source-hover .btn-source .btn-source-panel {
+          display block
+        }
+
+        .btn-source .btn-source-panel {
+          display none
+          padding 0
+          ul {
+            padding 0
+            list-style-type none
+            margin 0
+            overflow hidden
+            text-align left
+            li {
+              margin 0
+              border 0
+              padding 0 20px
+              height 36px
+              line-height 36px
+              white-space nowrap
+              cursor pointer
+              &:hover {
+                background hsla(0,0%,100%,.1)
+              }
+            }
+          }
+        }
+
         .btn-settings-hover .btn-settings .btn-settings-panel {
           display block
         }
 
         .btn-settings .btn-settings-panel {
           display none
-          cursor default
-          color #fff
           width 266px
-          box-sizing border-box
-          background rgba(21,21,21,.9)
-          border-radius 2px
-          position absolute
-          bottom 41px
-          right -113px
-          padding 12px 20px
-          text-align left
-          font-size 12px
-          transition all 0.05s
 
           .speed-bar {
             cursor pointer
