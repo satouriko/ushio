@@ -85,6 +85,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @Input() crossorigin
   @Input() autoplay
   @Input() preload = 'metadata'
+  @Input() set lang (lang: string) {
+    this.service.i18n.setLanguage(lang)
+  }
 
   private mSrc
   private mSources = []
@@ -103,6 +106,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.video.nativeElement.volume = volume
   }
   get volume100 () {
+    if (this.video.nativeElement.muted) return 0
     return Math.round(this.mVolume * 100)
   }
   @Output() volumeChange = new EventEmitter<number>()
@@ -174,6 +178,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ViewChild('sourceBtn', { static: true }) sourceBtn
   @ViewChild('subtitlesPanel', { static: true }) subtitlesPanel
   @ViewChild('subtitlesBtn', { static: true }) subtitlesBtn
+  @ViewChild('loopBtn', { static: true }) loopBtn
+  @ViewChild('loopPanel', { static: true }) loopPanel
+  @ViewChild('fullScreenBtn', { static: true }) fullScreenBtn
+  @ViewChild('fullScreenPanel', { static: true }) fullScreenPanel
 
   @ContentChildren(UshioSource) sourceContentChildren!: QueryList<UshioSource>
   @ContentChildren(UshioSubtitles) subtitlesContentChildren!: QueryList<UshioSubtitles>
@@ -211,8 +219,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return (this.video.nativeElement.muted || this.video.nativeElement.volume === 0)
       ? ' video-state-muted' : ' video-state-volume'
   }
-  get repeatClass (): string {
-    return this.video.nativeElement.loop ? ' video-state-repeat' : ' video-state-norepeat'
+  get loopClass (): string {
+    return this.video.nativeElement.loop ? ' video-state-loop' : ' video-state-noloop'
   }
   get subtitleEnabledClass (): string {
     return this.enabledSubtitles.length > 0 ? ' video-state-subtitles' : ' video-state-nosubtitles'
@@ -268,7 +276,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get volumeRate (): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
-      `transform: scaleY(${this.mVolume})`
+      `transform: scaleY(${this.volume100 / 100})`
     )
   }
   get volumeThumbPosition (): SafeStyle {
@@ -284,7 +292,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private panelTranslations = {
     settings: 0,
     source: 0,
-    subtitles: 0
+    subtitles: 0,
+    loop: 0,
+    fullscreen: 0
   }
   get settingsPanelPosition (): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
@@ -301,10 +311,22 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       `transform: translateX(calc(${-this.panelTranslations.subtitles}px - 50%))`
     )
   }
+  get loopPanelPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: translateX(calc(${-this.panelTranslations.loop}px - 50%))`
+    )
+  }
+  get fullScreenPanelPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: translateX(calc(${-this.panelTranslations.fullscreen}px - 50%))`
+    )
+  }
 
   private timeUpdate: Subscription
   private controlHoveredChange: Subscription
   private subscriptions: Subscription[] = []
+
+  t = this.service.i18n.t
 
   static mapSpeedToProgress (speed) {
     if (speed < .5) return 0
@@ -627,6 +649,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.controlMouseDown = true
         this.controlHoveredChange.unsubscribe()
       }
+      this.video.nativeElement.muted = false
       this.video.nativeElement.volume = e
     }))
     this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
@@ -772,6 +795,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         btn: this.subtitlesBtn,
         panel: this.subtitlesPanel,
         name: 'subtitles'
+      }, {
+        btn: this.loopBtn,
+        panel: this.loopPanel,
+        name: 'loop'
+      }, {
+        btn: this.fullScreenBtn,
+        panel: this.fullScreenPanel,
+        name: 'fullscreen'
       }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name))
     }, 0)
   }
@@ -830,11 +861,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   toggleMute () {
     if (this.interactMode === 'desktop') {
-      this.video.nativeElement.muted = !this.video.nativeElement.muted
+      this.video.nativeElement.muted = !(this.video.nativeElement.muted || this.video.nativeElement.volume === 0)
       this.mutedChange.emit(this.video.nativeElement.muted)
     } else if (this.video.nativeElement.muted) {
       this.video.nativeElement.muted = false
       this.mutedChange.emit(false)
+    }
+    if (!this.video.nativeElement.muted && this.video.nativeElement.volume === 0) {
+      this.video.nativeElement.volume = Math.random()
     }
   }
 

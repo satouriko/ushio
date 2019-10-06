@@ -37,6 +37,29 @@
     width 100%
     height 100%
   }
+  .ushio-player-btn:hover .btn-title {
+    bottom 41px
+    opacity 1
+    visibility visible
+  }
+  .ushio-player-btn .btn-title, .ushio-player-btn .btn-title:hover {
+    cursor default
+    color #fff
+    background rgba(21, 21, 21, .9)
+    border-radius 2px
+    position absolute
+    left 50%
+    transform translateX(-50%)
+    padding 0.75em
+    text-align left
+    font-size 12px
+    line-height 14px
+    transition all 0.3s
+    white-space nowrap
+    bottom 31px
+    opacity 0
+    visibility hidden
+  }
   .control-panel {
     cursor default
     color #fff
@@ -103,8 +126,8 @@
     position absolute
     width 100%
     z-index 40
-    top 25px
-    bottom 25px
+    top 10%
+    bottom 10%
     display flex
     flex-direction column-reverse
     justify-content flex-start
@@ -361,6 +384,10 @@
           width 36px
           position relative
 
+          &:hover {
+            fill #fff
+          }
+
           .ushio-player-icon {
             height 22px
             width 100%
@@ -610,21 +637,31 @@
           }
         }
 
-        .btn-repeat.video-state-repeat {
-          .icon-repeat-off {
+        .btn-loop.video-state-loop {
+          .icon-loop-off {
             display none
           }
-          .icon-repeat-on {
+          .icon-loop-on {
             display inline-flex
+          }
+          .btn-title.btn-title-noloop {
+            bottom 31px
+            opacity 0
+            visibility hidden
           }
         }
 
-        .btn-repeat.video-state-norepeat {
-          .icon-repeat-off {
+        .btn-loop.video-state-noloop {
+          .icon-loop-off {
             display inline-flex
           }
-          .icon-repeat-on {
+          .icon-loop-on {
             display none
+          }
+          .btn-title.btn-title-loop {
+            bottom 31px
+            opacity 0
+            visibility hidden
           }
         }
 

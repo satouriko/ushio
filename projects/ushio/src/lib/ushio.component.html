@@ -160,7 +160,7 @@
             <div class="btn-settings-panel control-panel" #settingsPanel [style]="settingsPanelPosition">
               <div class="panel-box settings-panel-speed">
                 <div class="panel-box-title">
-                  播放速度
+                  {{t('speed')}}
                 </div>
                 <div class="panel-box-content panel-speed-content speed-bar" #speedBar>
                   <div class="speed-track">
@@ -176,7 +176,7 @@
                       </div>
                       <div class="speed-track-steps-item" style="left: 40%">
                         <div class="step-dot"></div>
-                        <div class="step-text">正常</div>
+                        <div class="step-text">{{t('normal')}}</div>
                       </div>
                       <div class="speed-track-steps-item" style="left: 60%">
                         <div class="step-dot"></div>
@@ -199,22 +199,30 @@
               </div>
             </div>
           </div>
-          <div [className]="'ushio-player-btn btn-repeat' + repeatClass + (loopControl ? '' : ' hide')"
+          <div [className]="'ushio-player-btn btn-loop' + loopClass + (loopControl ? '' : ' hide')"
                (click)="toggleLoop()"
+               #loopBtn
           >
-            <span class="ushio-player-icon icon-repeat-on">
+            <span class="ushio-player-icon icon-loop-on">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
                 <path d="M17 16H6v-2h1.793a.5.5 0 0 0 .354-.853l-2.793-2.793a.5.5 0 0 0-.707 0l-2.793 2.793a.5.5 0 0 0 .353.853H4v2a2 2 0 0 0 2 2h11a1 1 0 0 0 0-2zM19.793 8H18V6a2 2 0 0 0-2-2H5a1 1 0 0 0 0 2h11v2h-1.793a.5.5 0 0 0-.354.853l2.793 2.793a.5.5 0 0 0 .707 0l2.793-2.793A.5.5 0 0 0 19.793 8z"></path>
               </svg>
             </span>
-            <span class="ushio-player-icon icon-repeat-off">
+            <span class="ushio-player-icon icon-loop-off">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
                 <path d="M3.222 3.222a.999.999 0 1 0-1.414 1.414l11.435 11.435H6v-2h1.793a.5.5 0 0 0 .354-.853l-2.793-2.793a.5.5 0 0 0-.707 0l-2.793 2.793a.5.5 0 0 0 .354.854H4v2a2 2 0 0 0 2 2h9.243l2.121 2.121a.999.999 0 1 0 1.414-1.414L3.222 3.222zM19.793 8.071H18v-2a2 2 0 0 0-2-2H6.899l2 2H16v2h-1.793a.5.5 0 0 0-.354.853l2.793 2.793a.5.5 0 0 0 .707 0l2.793-2.793a.5.5 0 0 0-.353-.853z"></path>
               </svg>
             </span>
+            <div class="btn-title btn-title-loop" #loopPanel [style]="loopPanelPosition">
+              {{ t('noLoop') }}
+            </div>
+            <div class="btn-title btn-title-noloop" [style]="loopPanelPosition">
+              {{ t('loop') }}
+            </div>
           </div>
           <div [className]="'ushio-player-btn btn-fullscreen' + fullscreenClass  + (fullscreenControl ? '' : ' hide')"
                (click)="toggleFullscreen()"
+               #fullScreenBtn
           >
             <span class="ushio-player-icon icon-fullscreen-off">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
@@ -226,6 +234,9 @@
                 <path d="M18 4H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM8 15.5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5V14H4.5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3zm0-6a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5H6V6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v3zm10 4a.5.5 0 0 1-.5.5H16v1.5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1zm0-4a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5V8h1.5a.5.5 0 0 1 .5.5v1z"></path>
               </svg>
             </span>
+            <div class="btn-title" #fullScreenPanel [style]="fullScreenPanelPosition">
+              {{ fullscreenClass === ' video-state-fullscreen' ? t('exitFullscreen') : t('fullscreen') }}
+            </div>
           </div>
         </div>
       </div>

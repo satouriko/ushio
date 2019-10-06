@@ -6,15 +6,60 @@ export interface ISubtitle {
   texts: string[]
 }
 
+class UshioI18nProvider {
+  private lang = 'en'
+  private readonly i18nSource = {
+    en: {
+      lang: 'English',
+      speed: 'Speed',
+      normal: 'Normal',
+      loop: 'Loop',
+      noLoop: 'No Loop',
+      fullscreen: 'Fullscreen',
+      exitFullscreen: 'Exit fullscreen'
+    },
+    'zh-Hans': {
+      lang: '简体中文',
+      speed: '播放速度',
+      normal: '正常',
+      loop: '循环播放',
+      noLoop: '关闭循环',
+      fullscreen: '全屏播放',
+      exitFullscreen: '退出全屏'
+    }
+  }
+
+  constructor () {
+    for (const langCode of navigator.languages) {
+      if (this.setLanguage(langCode)) break
+    }
+    this.t = this.t.bind(this)
+  }
+
+  setLanguage (langCode): boolean {
+    if (this.i18nSource[langCode]) {
+      this.lang = langCode
+      return true
+    }
+    return false
+  }
+
+  t (key: string): string {
+    return this.i18nSource[this.lang][key]
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UshioService {
 
-  constructor () { }
-
   // tslint:disable-next-line:max-line-length
   private readonly timeStampRegex = /^(?:(\d{2,})(:))?([0-5][0-9])(:)([0-5][0-9])([,.])(\d{3})( --> )(?:(\d{2,})(:))?([0-5][0-9])(:)([0-5][0-9])([,.])(\d{3})/
+  i18n = new UshioI18nProvider()
+
+  constructor () { }
+
 
   parseSubtitles (input: string): ISubtitle[] {
     const trim = (str: string) => str.trim()
@@ -79,4 +124,5 @@ export class UshioService {
     if (cachedSubtitle) splitSubtitles.push(cachedSubtitle)
     return splitSubtitles
   }
+
 }
