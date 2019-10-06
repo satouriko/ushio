@@ -46,6 +46,7 @@ export class UshioSubtitles {
   @Input() type: string
   @Input() name: string
   @Input() class: string
+  @Input() default: boolean
 }
 
 interface Source {
@@ -62,6 +63,7 @@ interface Subtitles {
   name: string
   class: string
   parsedSubtitles: ISubtitle[]
+  enabled: boolean
 }
 
 @Component({
@@ -91,6 +93,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   private mSubtitles = []
   subtitles: Subtitles[] = []
+  get enabledSubtitles () {
+    return this.subtitles.filter(s => s.enabled)
+  }
   flyingSubtitles: Subtitles[] = []
 
   private mVolume = 1
@@ -123,6 +128,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get sourceControl () {
     return this.mSourceControl
+  }
+  private mSubtitlesControl = true
+  @Input() set subtitlesControl (subtitlesControl) {
+    this.mSubtitlesControl = subtitlesControl
+    this.setAllControlPanelsPosition()
+  }
+  get subtitlesControl () {
+    return this.mSubtitlesControl
   }
   private mSettingsControl = true
   @Input() set settingsControl (settingsControl) {
@@ -159,6 +172,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ViewChild('speedBar', { static: true }) speedBar
   @ViewChild('sourcePanel', { static: true }) sourcePanel
   @ViewChild('sourceBtn', { static: true }) sourceBtn
+  @ViewChild('subtitlesPanel', { static: true }) subtitlesPanel
+  @ViewChild('subtitlesBtn', { static: true }) subtitlesBtn
 
   @ContentChildren(UshioSource) sourceContentChildren!: QueryList<UshioSource>
   @ContentChildren(UshioSubtitles) subtitlesContentChildren!: QueryList<UshioSubtitles>
@@ -198,6 +213,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get repeatClass (): string {
     return this.video.nativeElement.loop ? ' video-state-repeat' : ' video-state-norepeat'
+  }
+  get subtitleEnabledClass (): string {
+    return this.enabledSubtitles.length > 0 ? ' video-state-subtitles' : ' video-state-nosubtitles'
   }
   get fullscreenClass (): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen'
@@ -265,7 +283,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   private panelTranslations = {
     settings: 0,
-    source: 0
+    source: 0,
+    subtitles: 0
   }
   get settingsPanelPosition (): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
@@ -275,6 +294,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get sourcePanelPosition (): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(
       `transform: translateX(calc(${-this.panelTranslations.source}px - 50%))`
+    )
+  }
+  get subtitlesPanelPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(
+      `transform: translateX(calc(${-this.panelTranslations.subtitles}px - 50%))`
     )
   }
 
@@ -340,11 +364,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         )
       )
     }
-    const subtitlesAttr = ['value', 'type', 'src', 'name', 'class']
+    const subtitlesAttr = ['value', 'type', 'src', 'name', 'class', 'default']
     const subtitlesChange$ = onContentChildrenOrSlotChanged$(
       subtitlesAttr, this.subtitlesContentChildren, this.subtitlesSlotChange$)
     this.subscriptions.push(subtitlesChange$.subscribe(async (subtitles) => {
-      console.log(subtitles)
       this.mSubtitles = subtitles
       await this.updateSubtitles()
     }))
@@ -570,6 +593,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       btnElement: this.sourceBtn.nativeElement,
       popUpElement: this.sourcePanel.nativeElement,
       btnName: 'source'
+    }, {
+      btnElement: this.subtitlesBtn.nativeElement,
+      popUpElement: this.subtitlesPanel.nativeElement,
+      btnName: 'subtitles'
     }])
     const subscribeControlHoveredChange = () => {
       this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
@@ -668,7 +695,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       })
       this.sources = Object.values(sm)
     }
-    console.log(this.sources)
     const indexOfDefault = this.sources.findIndex(s => s.default)
     this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0
   }
@@ -685,7 +711,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       const parsed = {
         name: sub.name || 'Untitled',
         class: sub.class || '',
-        parsedSubtitles: undefined
+        parsedSubtitles: undefined,
+        enabled: sub.default
       }
       sub.type = sub.type || ''
       sub.type = sub.type.toLowerCase()
@@ -699,7 +726,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       }
       parsedSubtitles.push(parsed)
     }
-    console.log(parsedSubtitles)
     this.subtitles = parsedSubtitles
     this.updateFlyingSubtitles()
   }
@@ -710,7 +736,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }
     currentTime *= 1000
     const flyingSubtitles = []
-    this.subtitles.forEach(subtitles => {
+    this.enabledSubtitles.forEach(subtitles => {
       if (!subtitles.parsedSubtitles) return
       const flyingSubtitlesTrack = []
       subtitles.parsedSubtitles.forEach(subtitle => {
@@ -742,6 +768,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         btn: this.sourceBtn,
         panel: this.sourcePanel,
         name: 'source'
+      }, {
+        btn: this.subtitlesBtn,
+        panel: this.subtitlesPanel,
+        name: 'subtitles'
       }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name))
     }, 0)
   }
@@ -786,6 +816,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.video.nativeElement.load()
     this.video.nativeElement.currentTime = currentTime
     if (!paused) this.video.nativeElement.play()
+  }
+
+  onCheckSubtitles (i) {
+    this.subtitles[i].enabled = !this.subtitles[i].enabled
+    this.updateFlyingSubtitles()
   }
 
   togglePlay () {
