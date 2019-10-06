@@ -169,7 +169,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private mobileShowControlStateChange$ = new Subject<{ showControl: boolean, delaySwitch: boolean }>()
 
   interactMode: 'desktop' | 'mobile' = 'desktop'
-  private showControl = false
+  private mShowControl = false
   private thumbMouseDown = false
   private controlMouseDown = false
   controlHoveredClass = ''
@@ -179,12 +179,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get mouseDown (): boolean {
     return this.thumbMouseDown || this.controlMouseDown
   }
-  get showControlClass (): string {
-    return (this.showControl || this.controlHoveredClass || this.mouseDown) ? ' mouse-hover' : ''
+  get showControl () {
+    return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown)
   }
-  get noCursorClass (): string {
-    return !(this.showControl || this.controlHoveredClass || this.mouseDown) ? ' no-cursor' : ''
-  }
+  @Output() showControlChanged = new EventEmitter<boolean>()
   get thumbMouseDownClass (): string {
     return this.thumbMouseDown ? ' thumb-mouse-down' : ''
   }
@@ -427,7 +425,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       distinctUntilChanged()
     )
     this.subscriptions.push(showControlStateChange$.subscribe(state => {
-      this.showControl = state
+      this.mShowControl = state
     }))
     if (this.mPaused) this.video.nativeElement.pause()
     else this.video.nativeElement.play()
@@ -580,6 +578,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       })
     }
     subscribeControlHoveredChange()
+    const hoverStateChange$ = merge(showControlStateChange$, controlHoverStateChange$).pipe(
+      map(() => this.showControl),
+      distinctUntilChanged()
+    )
+    this.subscriptions.push(hoverStateChange$.subscribe(e => {
+      this.showControlChanged.emit(e)
+    }))
     const volumeMouseTouchDown$ = onMouseTouchDown$(
       this.volumeBar.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
@@ -767,7 +772,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.togglePlay()
     } else {
       this.mobileShowControlStateChange$.next({
-        showControl: !this.showControl,
+        showControl: !this.mShowControl,
         delaySwitch: true
       })
     }
