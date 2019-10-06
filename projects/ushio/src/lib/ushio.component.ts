@@ -22,6 +22,8 @@ import {
   filter, map, mapTo, switchMap, takeUntil
 } from 'rxjs/operators'
 
+import { ISubtitle , UshioService } from './ushio.service'
+
 @Directive({
   // tslint:disable-next-line:directive-selector
   selector: 'ushio-source'
@@ -39,7 +41,11 @@ export class UshioSource {
   selector: 'ushio-subtitles'
 })
 export class UshioSubtitles {
-  @Input() value!: string
+  @Input() value: string
+  @Input() src: string
+  @Input() type: string
+  @Input() name: string
+  @Input() class: string
 }
 
 interface Source {
@@ -50,6 +56,12 @@ interface Source {
     type: string;
   }[]
   default?: boolean
+}
+
+interface Subtitles {
+  name: string
+  class: string
+  parsedSubtitles: ISubtitle[]
 }
 
 @Component({
@@ -76,6 +88,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private mSources = []
   sources: Source[] = []
   playingSource = 0
+
+  private mSubtitles = []
+  subtitles: Subtitles[] = []
+  flyingSubtitles: Subtitles[] = []
 
   private mVolume = 1
   @Input() set volume (volume) {
@@ -293,7 +309,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   constructor (
     private element: ElementRef,
-    private sanitization: DomSanitizer
+    private sanitization: DomSanitizer,
+    private service: UshioService
   ) { }
 
   ngOnInit () {
@@ -325,17 +342,18 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         )
       )
     }
-    const subtitlesAttr = ['value']
+    const subtitlesAttr = ['value', 'type', 'src', 'name', 'class']
     const subtitlesChange$ = onContentChildrenOrSlotChanged$(
       subtitlesAttr, this.subtitlesContentChildren, this.subtitlesSlotChange$)
-    this.subscriptions.push(subtitlesChange$.subscribe((subtitles) => {
+    this.subscriptions.push(subtitlesChange$.subscribe(async (subtitles) => {
       console.log(subtitles)
+      this.mSubtitles = subtitles
+      await this.updateSubtitles()
     }))
     const sourcesAttr = ['src', 'type', 'name', 'shortname', 'default']
     const sourcesChange$ = onContentChildrenOrSlotChanged$(
       sourcesAttr, this.sourceContentChildren, this.sourcesSlotChange$)
     this.subscriptions.push(sourcesChange$.subscribe((sources) => {
-      console.log(sources)
       this.mSources = sources
       this.updateSources()
     }))
@@ -423,11 +441,15 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.mPaused = false
         this.pausedChange.emit(false)
       }))
-    this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
-      .subscribe(() => {
-        this.mCurrentTime = this.video.nativeElement.currentTime
-        this.currentTimeChange.emit(this.mCurrentTime)
-      })
+    const subscribeTimeUpdate = () => {
+      this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
+        .subscribe(() => {
+          this.mCurrentTime = this.video.nativeElement.currentTime
+          this.currentTimeChange.emit(this.mCurrentTime)
+          this.updateFlyingSubtitles(this.mCurrentTime)
+        })
+    }
+    subscribeTimeUpdate()
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting')
       .subscribe(() => {
         this.waiting = true
@@ -534,10 +556,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(mouseTouchUp$.subscribe(() => {
       if (this.thumbMouseDown) {
         this.video.nativeElement.currentTime = this.mCurrentTime
-        this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
-          .subscribe(() => {
-            this.mCurrentTime = this.video.nativeElement.currentTime
-          })
+        subscribeTimeUpdate()
         this.thumbMouseDown = false
       }
     }))
@@ -554,10 +573,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       popUpElement: this.sourcePanel.nativeElement,
       btnName: 'source'
     }])
-    this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
-      this.controlHoveredClass = e
-      this.setAllControlPanelsPosition()
-    })
+    const subscribeControlHoveredChange = () => {
+      this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
+        this.controlHoveredClass = e
+        this.setAllControlPanelsPosition()
+      })
+    }
+    subscribeControlHoveredChange()
     const volumeMouseTouchDown$ = onMouseTouchDown$(
       this.volumeBar.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
@@ -580,10 +602,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }))
     this.subscriptions.push(mouseTouchUp$.subscribe(() => {
       if (this.controlMouseDown) {
-        this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
-          this.controlHoveredClass = e
-          this.setAllControlPanelsPosition()
-        })
+        subscribeControlHoveredChange()
         this.controlMouseDown = false
       }
     }))
@@ -611,7 +630,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   ngOnDestroy () {
-    this.timeUpdate.unsubscribe()
+    if (this.timeUpdate) this.timeUpdate.unsubscribe()
+    if (this.controlHoveredChange) this.controlHoveredChange.unsubscribe()
     this.subscriptions.forEach(sub => sub.unsubscribe())
   }
 
@@ -646,6 +666,65 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     console.log(this.sources)
     const indexOfDefault = this.sources.findIndex(s => s.default)
     this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0
+  }
+
+  private async updateSubtitles () {
+    const parsedSubtitles = []
+    for (const sub of this.mSubtitles) {
+      let text = ''
+      if (sub.value) text = sub.value
+      else if (sub.src) {
+        const resp = await fetch(sub.src)
+        text = await resp.text()
+      }
+      const parsed = {
+        name: sub.name || 'Untitled',
+        class: sub.class || '',
+        parsedSubtitles: undefined
+      }
+      sub.type = sub.type || ''
+      sub.type = sub.type.toLowerCase()
+      if (sub.type !== 'text/vtt' && sub.type !== 'text/srt') {
+        console.warn('Unknown MIME type of subtitles, trying to infer subtitle format. Supported type: text/vtt, text/srt.')
+      }
+      try {
+        parsed.parsedSubtitles = this.service.parseSubtitles(text)
+      } catch (e) {
+        console.error(e)
+      }
+      parsedSubtitles.push(parsed)
+    }
+    console.log(parsedSubtitles)
+    this.subtitles = parsedSubtitles
+    this.updateFlyingSubtitles()
+  }
+
+  private updateFlyingSubtitles (currentTime?) {
+    if (currentTime === undefined) {
+      currentTime = this.video.nativeElement.currentTime
+    }
+    currentTime *= 1000
+    const flyingSubtitles = []
+    this.subtitles.forEach(subtitles => {
+      if (!subtitles.parsedSubtitles) return
+      const flyingSubtitlesTrack = []
+      subtitles.parsedSubtitles.forEach(subtitle => {
+        if (currentTime > subtitle.startTime && currentTime < subtitle.endTime) {
+          flyingSubtitlesTrack.push({
+            ...subtitle,
+            texts: subtitle.texts.map(text => this.sanitization.bypassSecurityTrustHtml(text))
+          })
+        }
+      })
+      if (flyingSubtitlesTrack.length) {
+        flyingSubtitles.push({
+          name: subtitles.name,
+          class: subtitles.class,
+          parsedSubtitles: flyingSubtitlesTrack
+        })
+      }
+    })
+    this.flyingSubtitles = flyingSubtitles
   }
 
   private setAllControlPanelsPosition () {

@@ -20,6 +20,16 @@
   <div class="ushio-player-custom-mask">
     <slot (slotchange)="onSlotChange($event)"></slot>
   </div>
+  <div class="ushio-player-subtitle-container">
+    <div *ngFor="let subtitles of flyingSubtitles"
+         [className]="'ushio-player-subtitle-wrap ' + subtitles.class">
+      <div *ngFor="let subtitle of subtitles.parsedSubtitles" class="ushio-player-subtitle">
+        <div *ngFor="let line of subtitle.texts" class="subtitle-line">
+          <span [innerHTML]="line"></span>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="ushio-player-video-control-mask"></div>
   <div class="ushio-player-video-control-wrap">
     <div class="ushio-player-video-control">

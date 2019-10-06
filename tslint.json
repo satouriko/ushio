@@ -84,6 +84,7 @@
     "template-no-negated-async": true,
     "use-lifecycle-interface": true,
     "use-pipe-transform-interface": true,
-    "no-floating-promises": false
+    "no-floating-promises": false,
+    "strict-type-predicates": false
   }
 }
