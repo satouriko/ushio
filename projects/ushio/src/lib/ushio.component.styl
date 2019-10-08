@@ -71,6 +71,7 @@
     text-align left
     font-size 12px
     transition all 0.05s
+    z-index 85
 
     ul {
       padding 0
@@ -167,17 +168,6 @@
     display none !important;
   }
 
-  .ushio-theme-background {
-    background #00a1d6
-  }
-
-  .ushio-theme-color {
-    color #00a1d6
-    svg {
-      fill #00a1d6
-    }
-  }
-
   .thumb-dot {
     transform translateZ(0)
     width 12px
@@ -186,6 +176,25 @@
     display flex
     vertical-align middle
     align-items center
+    background-color var(--theme-color, #00a1d6)
+  }
+
+  .bar-normal {
+    position absolute
+    top 0
+    bottom 0
+    left 0
+    right 0
+    background-color var(--theme-color, #00a1d6)
+  }
+
+  .bar-buffer {
+    background hsla(0, 0%, 100%, .3)
+    position absolute
+    top 0
+    bottom 0
+    left 0
+    right 0
   }
 
   .ushio-player-video-mask {
@@ -310,24 +319,13 @@
 
                 .bar-buffer {
                   transform scaleX(0)
-                  background hsla(0, 0%, 100%, .3)
                   transition transform .2s, -webkit-transform .2s
-                  position absolute
                   transform-origin 0 0
-                  top 0
-                  bottom 0
-                  left 0
-                  right 0
                 }
 
                 .bar-normal {
                   transform scaleX(0)
-                  position absolute
                   transform-origin 0 0
-                  top 0
-                  bottom 0
-                  left 0
-                  right 0
                 }
 
               }
@@ -390,7 +388,7 @@
               .sign-down {
                 width 0
                 height 0
-                border-color #00a1d6 transparent transparent
+                border-color var(--theme-color, #00a1d6) transparent transparent
                 border-style solid
                 border-width 4px 4px 0
                 position relative
@@ -399,7 +397,7 @@
                 margin-top 8px
                 width 0
                 height 0
-                border-color transparent transparent #00a1d6
+                border-color transparent transparent var(--theme-color, #00a1d6)
                 border-style solid
                 border-width 0 4px 4px
                 position relative
@@ -544,14 +542,9 @@
 
         .btn-volume .btn-volume-panel {
           display none
-          position absolute
-          cursor default
-          bottom 41px
-          left 2px
+          padding 0
           width 32px
           height 106px
-          background rgba(21,21,21,.9)
-          border-radius 2px
 
           .volume-num {
             color #e5e9ef
@@ -592,10 +585,6 @@
                 .bar-normal {
                   position absolute
                   transform-origin 0 100%
-                  bottom 0
-                  left 0
-                  right 0
-                  top 0
                 }
               }
 
@@ -621,6 +610,7 @@
             li {
               &.selected {
                 cursor default
+                color var(--theme-color, #00a1d6)
               }
             }
           }
@@ -633,6 +623,16 @@
         .btn-subtitles .btn-subtitles-panel {
           display none
           padding 0
+          ul {
+            li {
+              &.checked {
+                color var(--theme-color, #00a1d6)
+                svg {
+                  fill var(--theme-color, #00a1d6)
+                }
+              }
+            }
+          }
         }
 
         .btn-settings-hover .btn-settings .btn-settings-panel {

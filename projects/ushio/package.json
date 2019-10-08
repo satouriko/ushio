@@ -1,7 +1,7 @@
 {
   "name": "ushio",
   "version": "4.0.0",
-  "description": "Ushio is a lovely HTML5 video player with double-track SRT subtitle support. 🍭",
+  "description": "Get your favorite html video player in one simple html tag.",
   "peerDependencies": {
     "@angular/common": "^8.2.8",
     "@angular/core": "^8.2.8"

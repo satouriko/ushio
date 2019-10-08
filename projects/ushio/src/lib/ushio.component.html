@@ -39,10 +39,10 @@
             <div class="slider-track">
               <div class="slider-track-bar-wrap">
                 <div class="bar-buffer" [style]="bufferedProgress"></div>
-                <div class="bar-normal ushio-theme-background" [style]="playedProgress"></div>
+                <div class="bar-normal" [style]="playedProgress"></div>
               </div>
               <div class="slider-track-thumb" [style]="thumbPosition">
-                <div class="thumb-dot ushio-theme-background"></div>
+                <div class="thumb-dot"></div>
               </div>
             </div>
           </div>
@@ -96,15 +96,15 @@
                 <use xlink:href="#ushio-volume-min" x="0" y="0" />
               </svg>
             </span>
-            <div class="btn-volume-panel" #volumePanel>
+            <div class="control-panel btn-volume-panel" #volumePanel>
               <div class="volume-num">{{volume100}}</div>
               <div class="volume-bar" #volumeBar>
                 <div class="volume-bar-track">
                   <div class="volume-bar-track-wrap">
-                    <div class="bar-normal  ushio-theme-background" [style]="volumeRate"></div>
+                    <div class="bar-normal" [style]="volumeRate"></div>
                   </div>
                   <div class="volume-bar-track-thumb" [style]="volumeThumbPosition">
-                    <div class="thumb-dot ushio-theme-background"></div>
+                    <div class="thumb-dot"></div>
                   </div>
                 </div>
               </div>
@@ -118,7 +118,7 @@
               <ul>
                 <li *ngFor="let source of sources; index as i"
                     (click)="onSelectSource(i)"
-                    [className]="playingSource === i ? 'selected ushio-theme-color' : ''"
+                    [className]="playingSource === i ? 'selected' : ''"
                 >
                   {{ source.name }}
                 </li>
@@ -142,7 +142,7 @@
               <ul>
                 <li *ngFor="let subtitleTrack of subtitles; index as i"
                     (click)="onCheckSubtitles(i)"
-                    [className]="subtitleTrack.enabled ? 'checked ushio-theme-color' : ''"
+                    [className]="subtitleTrack.enabled ? 'checked' : ''"
                 >
                   <span *ngIf="!subtitleTrack.enabled" class="checkbox-icon checkbox-icon-default">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
@@ -202,7 +202,7 @@
                       </div>
                     </div>
                     <div class="speed-track-thumb" [style]="speedThumbPosition">
-                      <div class="thumb-dot ushio-theme-background"></div>
+                      <div class="thumb-dot"></div>
                     </div>
                   </div>
                 </div>
