@@ -407,7 +407,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     const mouseUp$ = fromEvent(document, 'mouseup')
     const touchMove$ = fromEvent(document, 'touchmove')
     const touchStart$ = fromEvent(document, 'touchstart')
-    const touchEnd$ = fromEvent(document, 'touchEnd')
+    const touchEnd$ = merge(
+      fromEvent(document, 'touchend'),
+      fromEvent(document, 'touchcancel')
+    )
     const mouseTouchUp$ = merge(mouseUp$, touchEnd$)
     touchStart$.subscribe(() => {
       this.interactMode = 'mobile'
