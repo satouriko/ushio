@@ -46,6 +46,19 @@
               </div>
             </div>
           </div>
+          <div [className]="'video-progress-detail' + progressDetailClass" [style]="progressDetailPosition">
+            <div *ngIf="thumbnails"
+                 class="video-progress-detail-container" [style]="progressDetailContainerPosition">
+              <div class="detail-img" [style]="progressDetailImgStyle"></div>
+            </div>
+            <div class="video-progress-detail-sign">
+              <div class="sign-down"></div>
+              <div class="sign-up"></div>
+            </div>
+            <div class="video-progress-detail-time" [style]="progressDetailTimePosition">
+              {{progressDetailTime}}
+            </div>
+          </div>
         </div>
       </div>
       <div class="video-control-bottom">

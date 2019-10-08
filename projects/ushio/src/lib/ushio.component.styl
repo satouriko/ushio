@@ -345,8 +345,84 @@
             }
           }
 
-          .video-progress-detail {
+          .video-progress-detail.active {
+            display block
+          }
 
+          .video-progress-detail {
+            display none
+            position absolute
+            bottom 7px
+            overflow visible
+            width 20px
+            height 36px
+            margin-left -10px
+            text-align center
+            z-index 72
+            pointer-events none
+
+            .video-progress-detail-container {
+              margin-left -80px
+              width 160px
+              position absolute
+              bottom 18px
+              left 10px
+              background-color transparent
+              border-radius 2px
+              overflow hidden
+              z-index 72
+
+              .detail-img {
+                width 160px
+              }
+            }
+
+            .video-progress-detail-sign {
+              cursor pointer
+              width 8px
+              height 16px
+              margin 0 auto
+              position absolute
+              overflow hidden
+              top 28px
+              left 6px
+              visibility visible
+              .sign-down {
+                width 0
+                height 0
+                border-color #00a1d6 transparent transparent
+                border-style solid
+                border-width 4px 4px 0
+                position relative
+              }
+              .sign-up {
+                margin-top 8px
+                width 0
+                height 0
+                border-color transparent transparent #00a1d6
+                border-style solid
+                border-width 0 4px 4px
+                position relative
+              }
+            }
+
+            .video-progress-detail-time {
+              z-index 73
+              position absolute
+              bottom 18px
+              left 10px
+              width 40px
+              text-align center
+              margin-left -20px
+              line-height 18px
+              height 18px
+              font-size 12px
+              background rgba(21,21,21,.9)
+              border-radius 2px
+              color #fff
+              vertical-align bottom
+              display inline-block
+            }
           }
 
           &:hover, &.thumb-mouse-down {
@@ -359,6 +435,14 @@
                     transform scale(1)
                   }
                 }
+              }
+            }
+          }
+
+          &.thumb-mouse-down {
+            .video-progress-detail {
+              .video-progress-detail-sign {
+                visibility hidden
               }
             }
           }

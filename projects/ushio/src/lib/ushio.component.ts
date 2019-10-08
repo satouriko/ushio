@@ -90,6 +90,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @Input() set lang (lang: string) {
     this.service.i18n.setLanguage(lang)
   }
+  @Input() thumbnails
 
   private mSrc
   private mSources = []
@@ -204,6 +205,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private showContextMenu = false
   private showStatisticInfoPanel = false
   private showVolumeHint = false
+  private showProgressDetail = false
   get isFullScreen (): boolean {
     return document.fullscreenElement !== null
   }
@@ -244,6 +246,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get volumeHintClass (): string {
     return this.showVolumeHint ? ' active' : ''
+  }
+  get progressDetailClass (): string {
+    return this.showProgressDetail ? ' active' : ''
   }
 
   private mPaused = true
@@ -346,6 +351,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get contextMenuPosition (): SafeStyle {
     return this.sanitization.bypassSecurityTrustStyle(this.mContextMenuPosition)
   }
+  private mProgressDetailPosition = ''
+  private mProgressDetailContainerPosition = ''
+  private mProgressDetailTimePosition = ''
+  private mProgressDetailPositionRate = 0
+  get progressDetailPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(this.mProgressDetailPosition)
+  }
+  get progressDetailContainerPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(this.mProgressDetailContainerPosition)
+  }
+  get progressDetailTimePosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(this.mProgressDetailTimePosition)
+  }
+  get progressDetailImgStyle (): SafeStyle {
+    const height = this.video.nativeElement.videoHeight * 160 / this.video.nativeElement.videoWidth
+    return this.sanitization.bypassSecurityTrustStyle(
+      `height: ${height}px;
+       line-height: ${height}px;
+       background-image: url("${this.thumbnails}");
+       background-position: -${(Math.ceil(this.mProgressDetailPositionRate * 100) - 1) * 160}px 0;`
+    )
+  }
+  get progressDetailTime (): string {
+    return UshioComponent.formatDuration(this.mProgressDetailPositionRate * this.duration)
+  }
+
   languages = this.service.i18n.languages
   contextMenuState = 'root'
   get version () {
@@ -520,6 +551,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     )
     this.subscriptions.push(showControlStateChange$.subscribe(state => {
       this.mShowControl = state
+    }))
+    const mouseHoverProgressState$ = mouseMove$.pipe(
+      filter(() => (this.interactMode === 'desktop')),
+      map((e: MouseEvent) => {
+        const rect = this.slider.nativeElement.getBoundingClientRect()
+        const yCenter = (rect.top + rect.bottom) / 2
+        if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
+          const left = e.clientX - rect.left
+          const containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10
+          const timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10
+          return { left, containerLeft, timeLeft, width: rect.width }
+        } else {
+          return false
+        }
+      })
+    )
+    this.subscriptions.push(mouseHoverProgressState$.subscribe(state => {
+      if (!state) {
+        this.showProgressDetail = false
+      } else {
+        this.showProgressDetail = true
+        this.mProgressDetailPosition = `left: ${state.left}px`
+        this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`
+        this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`
+        this.mProgressDetailPositionRate = state.left / state.width
+      }
     }))
     if (this.mPaused) this.video.nativeElement.pause()
     else this.video.nativeElement.play()
