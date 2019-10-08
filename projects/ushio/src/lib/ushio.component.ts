@@ -23,7 +23,7 @@ import {
   filter, map, mapTo, repeat, switchMap, takeUntil, tap
 } from 'rxjs/operators'
 
-import { ISubtitle , UshioService } from './ushio.service'
+import { ISubtitle, UshioService } from './ushio.service'
 
 @Directive({
   // tslint:disable-next-line:directive-selector
@@ -890,7 +890,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
           }
         }
         sm[source.shortname].sources.push(source)
-        if (source.default !== undefined) {
+        if (source.default !== undefined && source.default !== null) {
           sm[source.shortname].default = true
         }
       })
@@ -913,12 +913,13 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         name: sub.name || 'Untitled',
         class: sub.class || '',
         parsedSubtitles: undefined,
-        enabled: sub.default || sub.srclang === this.service.i18n.language
+        enabled: sub.default !== undefined && sub.default !== null
+          || sub.srclang === this.service.i18n.language
       }
       sub.type = sub.type || ''
       sub.type = sub.type.toLowerCase()
-      if (sub.type !== 'text/vtt' && sub.type !== 'text/srt') {
-        console.warn('Unknown MIME type of subtitles, trying to infer subtitle format. Supported type: text/vtt, text/srt.')
+      if (sub.type !== 'text/vtt' && sub.type !== 'application/x-subrip') {
+        console.warn('Unknown MIME type of subtitles, trying to infer subtitle format. Supported type: text/vtt, application/x-subrip.')
       }
       try {
         parsed.parsedSubtitles = this.service.parseSubtitles(text)
