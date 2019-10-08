@@ -248,7 +248,7 @@
   >
     <div class="ushio-context-menu-root">
       <ul>
-        <li>{{t('statistic')}}</li>
+        <li (click)="toggleShowStatisticInfoPanel()">{{t('statistic')}}</li>
         <li #langContextMenuOption>{{t('language')}}</li>
         <li>
           <a target="_blank" referrerpolicy="no-referrer" href="https://github.com/rikakomoe/ushio">
@@ -262,5 +262,15 @@
         <li *ngFor="let lang of languages" (click)="setLanguage(lang[0])">{{lang[1]}}</li>
       </ul>
     </div>
+  </div>
+  <div [className]="'ushio-statistic-info control-panel' + showStatisticInfoPanelClass">
+    <a class="dismiss" (click)="toggleShowStatisticInfoPanel()">[x]</a>
+    <table>
+      <tr><td>Player version</td><td>{{detailedVersion}}</td></tr>
+      <tr><td>Player FPS</td><td>{{fps}}</td></tr>
+      <tr><td>Video resolution</td><td>{{videoResolution}}</td></tr>
+      <tr><td>Video duration</td><td>{{videoDuration}}</td></tr>
+      <tr><td>Current time</td><td>{{videoCurrentTime}}</td></tr>
+    </table>
   </div>
 </div>

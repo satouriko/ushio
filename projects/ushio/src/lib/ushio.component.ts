@@ -14,12 +14,13 @@ import {
 } from '@angular/core'
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser'
 import {
+  animationFrameScheduler,
   fromEvent, merge, NEVER, Observable, of,
   Subject, Subscription, timer
 } from 'rxjs'
 import {
   concatMap, distinctUntilChanged,
-  filter, map, mapTo, switchMap, takeUntil
+  filter, map, mapTo, repeat, switchMap, takeUntil
 } from 'rxjs/operators'
 
 import { ISubtitle , UshioService } from './ushio.service'
@@ -200,6 +201,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private controlMouseDown = false
   controlHoveredClass = ''
   private showContextMenu = false
+  private showStatisticInfoPanel = false
   get isFullScreen (): boolean {
     return document.fullscreenElement !== null
   }
@@ -235,6 +237,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get showContextMenuClass (): string {
     return this.showContextMenu ? ' active' : ''
   }
+  get showStatisticInfoPanelClass (): string {
+    return this.showStatisticInfoPanel ? ' active' : ''
+  }
 
   private mPaused = true
   @Input() set paused (paused) {
@@ -259,6 +264,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.video.nativeElement.muted = muted
   }
   @Output() mutedChange = new EventEmitter<boolean>()
+
+  fps = '0.00'
+  private fpsStart = 0
+  private fpsIndex = 0
 
   get currentTimeStr (): string {
     return UshioComponent.formatDuration(this.mCurrentTime)
@@ -336,6 +345,18 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   contextMenuState = 'root'
   get version () {
     return this.service.version
+  }
+  get detailedVersion () {
+    return `v${this.service.version} (${this.service.build})`
+  }
+  get videoResolution () {
+    return `${this.video.nativeElement.videoWidth} x ${this.video.nativeElement.videoHeight}`
+  }
+  get videoDuration () {
+    return this.video.nativeElement.duration.toFixed(6)
+  }
+  get videoCurrentTime () {
+    return this.video.nativeElement.currentTime.toFixed(6)
   }
 
   private timeUpdate: Subscription
@@ -729,6 +750,17 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.langContextMenuOption.nativeElement.addEventListener('click', this.showLangMenu, true)
     this.element.nativeElement.addEventListener('click', this.onComponentClicked, true)
     document.addEventListener('click', this.onDocumentClicked, true)
+    const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat())
+    this.subscriptions.push(animationFrame$.subscribe(() => {
+      if (!this.fpsStart) this.fpsStart = +new Date()
+      this.fpsIndex++
+      const fpsCurrent = +new Date()
+      if (fpsCurrent - this.fpsStart > 1000) {
+        this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2)
+        this.fpsStart = +new Date()
+        this.fpsIndex = 0
+      }
+    }))
   }
 
   ngOnDestroy () {
@@ -952,6 +984,10 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   setLanguage (code) {
     this.service.i18n.setLanguage(code)
+  }
+
+  toggleShowStatisticInfoPanel () {
+    this.showStatisticInfoPanel = !this.showStatisticInfoPanel
   }
 
 }

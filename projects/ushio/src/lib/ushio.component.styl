@@ -729,7 +729,7 @@
     transition none
     visibility hidden
     padding 0
-    z-index 80
+    z-index 99999
     color hsla(0, 0%, 100%, .8)
     fill hsla(0, 0%, 100%, .9)
 
@@ -757,6 +757,34 @@
     }
     .ushio-context-menu-lang {
       display block
+    }
+  }
+
+  .ushio-statistic-info.active {
+    display block
+  }
+
+  .ushio-statistic-info {
+    display none
+    left 10px
+    top 10px
+    z-index 80
+    padding 12px 30px 12px 20px
+
+    .dismiss {
+      cursor pointer
+      position absolute
+      right 10px
+      top 10px
+    }
+
+    tr {
+      td {
+        padding 0 5px
+      }
+      td:first-child {
+        text-align right
+      }
     }
   }
 
