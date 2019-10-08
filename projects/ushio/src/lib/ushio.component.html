@@ -239,7 +239,7 @@
       </div>
     </div>
   </div>
-  <div [className]="'ushio-context-menu control-panel ' + contextMenuState + showContextMenuClass"
+  <div [className]="'ushio-context-menu control-panel ' + contextMenuClass"
        #contextMenu
        [style]="contextMenuPosition"
   >
@@ -260,7 +260,7 @@
       </ul>
     </div>
   </div>
-  <div [className]="'ushio-statistic-info control-panel' + showStatisticInfoPanelClass">
+  <div [className]="'ushio-statistic-info control-panel' + statisticInfoPanelClass">
     <a class="dismiss" (click)="toggleShowStatisticInfoPanel()">[x]</a>
     <table>
       <tr><td>Player version</td><td>{{detailedVersion}}</td></tr>
@@ -269,6 +269,22 @@
       <tr><td>Video duration</td><td>{{videoDuration}}</td></tr>
       <tr><td>Current time</td><td>{{videoCurrentTime}}</td></tr>
     </table>
+  </div>
+  <div [className]="'ushio-volume-hint' + volumeHintClass">
+    <span [className]="mutedClass">
+      <span class="ushio-player-icon icon-volume-max" (click)="toggleMute()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+          <use xlink:href="#ushio-volume-max" x="0" y="0" />
+        </svg>
+      </span>
+      <span class="ushio-player-icon icon-volume-min" (click)="toggleMute()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+          <use xlink:href="#ushio-volume-min" x="0" y="0" />
+        </svg>
+      </span>
+    </span>
+    <span *ngIf="volume100">{{volume100}}%</span>
+    <span *ngIf="!volume100">{{t('mute')}}</span>
   </div>
   <div class="ushio-res">
     <svg xmlns="http://www.w3.org/2000/svg">

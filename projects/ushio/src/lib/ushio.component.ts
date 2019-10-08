@@ -20,7 +20,7 @@ import {
 } from 'rxjs'
 import {
   concatMap, distinctUntilChanged,
-  filter, map, mapTo, repeat, switchMap, takeUntil
+  filter, map, mapTo, repeat, switchMap, takeUntil, tap
 } from 'rxjs/operators'
 
 import { ISubtitle , UshioService } from './ushio.service'
@@ -202,6 +202,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   controlHoveredClass = ''
   private showContextMenu = false
   private showStatisticInfoPanel = false
+  private showVolumeHint = false
   get isFullScreen (): boolean {
     return document.fullscreenElement !== null
   }
@@ -234,11 +235,14 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get fullscreenClass (): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen'
   }
-  get showContextMenuClass (): string {
-    return this.showContextMenu ? ' active' : ''
+  get contextMenuClass (): string {
+    return this.contextMenuState + (this.showContextMenu ? ' active' : '')
   }
-  get showStatisticInfoPanelClass (): string {
+  get statisticInfoPanelClass (): string {
     return this.showStatisticInfoPanel ? ' active' : ''
+  }
+  get volumeHintClass (): string {
+    return this.showVolumeHint ? ' active' : ''
   }
 
   private mPaused = true
@@ -724,6 +728,40 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }))
     this.subscriptions.push(speedTouchDrag$.subscribe(e => {
       this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
+    }))
+    const onKeyDown$ = code => fromEvent(document, 'keydown').pipe(
+      filter((e: KeyboardEvent) => this.focus && e.code === code),
+      tap(e => {
+        e.preventDefault()
+        e.stopPropagation()
+      })
+    )
+    this.subscriptions.push(onKeyDown$('Space').subscribe(e => {
+      this.togglePlay()
+    }))
+    this.subscriptions.push(onKeyDown$('ArrowRight').subscribe(() => {
+      this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration
+      this.video.nativeElement.currentTime = this.mCurrentTime
+    }))
+    this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe(() => {
+      this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0
+      this.video.nativeElement.currentTime = this.mCurrentTime
+    }))
+    this.subscriptions.push(onKeyDown$('ArrowUp').subscribe(() => {
+      this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1
+      this.video.nativeElement.volume = this.mVolume
+    }))
+    this.subscriptions.push(onKeyDown$('ArrowDown').subscribe(() => {
+      this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0
+      this.video.nativeElement.volume = this.mVolume
+    }))
+    const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
+    const dismissVolumeHint$ = showVolumeHint$.pipe(switchMap(() => timer(1000)))
+    this.subscriptions.push(showVolumeHint$.subscribe(() => {
+      this.showVolumeHint = true
+    }))
+    this.subscriptions.push(dismissVolumeHint$.subscribe(() => {
+      this.showVolumeHint = false
     }))
     this.setAllControlPanelsPosition()
     this.subscriptions.push(fromEvent(this.element.nativeElement, 'contextmenu')

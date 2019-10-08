@@ -788,6 +788,57 @@
     }
   }
 
+  .ushio-volume-hint.active {
+    visibility visible
+    opacity 1
+  }
+
+  .ushio-volume-hint {
+    position absolute
+    top 50%
+    left 50%
+    z-index 30
+    width 82px
+    height 32px
+    line-height 32px
+    padding 9px 11px 9px 7px
+    font-size 20px
+    margin-left -50px
+    margin-top -25px
+    border-radius 4px
+    background hsla(0,0%,100%,.8)
+    color #000
+    text-align center
+    display flex
+    visibility hidden
+    opacity 0
+    transition all .2s ease-in-out
+
+    .ushio-player-icon {
+      width 35px
+      height 35px
+      margin-right 5px
+    }
+
+    .video-state-muted {
+      .icon-volume-max {
+        display none
+      }
+      .icon-volume-min {
+        display inline-flex
+      }
+    }
+
+    .video-state-volume {
+      .icon-volume-max {
+        display inline-flex
+      }
+      .icon-volume-min {
+        display none
+      }
+    }
+  }
+
   .ushio-res {
     position absolute
     display none

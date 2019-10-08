@@ -18,7 +18,8 @@ class UshioI18nProvider {
       fullscreen: 'Fullscreen',
       exitFullscreen: 'Exit fullscreen',
       statistic: 'Video statistic',
-      language: 'Language'
+      language: 'Language',
+      mute: 'Mute'
     },
     'zh-Hans': {
       lang: '简体中文',
@@ -29,7 +30,8 @@ class UshioI18nProvider {
       fullscreen: '全屏播放',
       exitFullscreen: '退出全屏',
       statistic: '视频统计信息',
-      language: '语言'
+      language: '语言',
+      mute: '静音'
     }
   }
   get languages () {
