@@ -242,4 +242,25 @@
       </div>
     </div>
   </div>
+  <div [className]="'ushio-context-menu control-panel ' + contextMenuState + showContextMenuClass"
+       #contextMenu
+       [style]="contextMenuPosition"
+  >
+    <div class="ushio-context-menu-root">
+      <ul>
+        <li>{{t('statistic')}}</li>
+        <li #langContextMenuOption>{{t('language')}}</li>
+        <li>
+          <a target="_blank" referrerpolicy="no-referrer" href="https://github.com/rikakomoe/ushio">
+            Ushio Player v{{version}}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="ushio-context-menu-lang">
+      <ul>
+        <li *ngFor="let lang of languages" (click)="setLanguage(lang[0])">{{lang[1]}}</li>
+      </ul>
+    </div>
+  </div>
 </div>

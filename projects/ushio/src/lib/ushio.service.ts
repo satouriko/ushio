@@ -16,7 +16,9 @@ class UshioI18nProvider {
       loop: 'Loop',
       noLoop: 'No Loop',
       fullscreen: 'Fullscreen',
-      exitFullscreen: 'Exit fullscreen'
+      exitFullscreen: 'Exit fullscreen',
+      statistic: 'Video statistic',
+      language: 'Language'
     },
     'zh-Hans': {
       lang: '简体中文',
@@ -25,8 +27,13 @@ class UshioI18nProvider {
       loop: '循环播放',
       noLoop: '关闭循环',
       fullscreen: '全屏播放',
-      exitFullscreen: '退出全屏'
+      exitFullscreen: '退出全屏',
+      statistic: '视频统计信息',
+      language: '语言'
     }
+  }
+  get languages () {
+    return Object.entries(this.i18nSource).map(entry => [entry[0], entry[1].lang])
   }
 
   constructor () {
@@ -54,12 +61,20 @@ class UshioI18nProvider {
 })
 export class UshioService {
 
+  static version = '4.0.0'
+  static build = 'NG Build'
+
   // tslint:disable-next-line:max-line-length
   private readonly timeStampRegex = /^(?:(\d{2,})(:))?([0-5][0-9])(:)([0-5][0-9])([,.])(\d{3})( --> )(?:(\d{2,})(:))?([0-5][0-9])(:)([0-5][0-9])([,.])(\d{3})/
   i18n = new UshioI18nProvider()
+  get version () {
+    return UshioService.version
+  }
+  get build () {
+    return UshioService.build
+  }
 
   constructor () { }
-
 
   parseSubtitles (input: string): ISubtitle[] {
     const trim = (str: string) => str.trim()

@@ -182,6 +182,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   @ViewChild('loopPanel', { static: true }) loopPanel
   @ViewChild('fullScreenBtn', { static: true }) fullScreenBtn
   @ViewChild('fullScreenPanel', { static: true }) fullScreenPanel
+  @ViewChild('contextMenu', { static: true }) contextMenu
+  @ViewChild('langContextMenuOption', { static: true }) langContextMenuOption
 
   @ContentChildren(UshioSource) sourceContentChildren!: QueryList<UshioSource>
   @ContentChildren(UshioSubtitles) subtitlesContentChildren!: QueryList<UshioSubtitles>
@@ -192,10 +194,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private mobileShowControlStateChange$ = new Subject<{ showControl: boolean, delaySwitch: boolean }>()
 
   interactMode: 'desktop' | 'mobile' = 'desktop'
+  private focus = false
   private mShowControl = false
   private thumbMouseDown = false
   private controlMouseDown = false
   controlHoveredClass = ''
+  private showContextMenu = false
   get isFullScreen (): boolean {
     return document.fullscreenElement !== null
   }
@@ -227,6 +231,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get fullscreenClass (): string {
     return this.isFullScreen ? ' video-state-fullscreen' : ' video-state-nofullscreen'
+  }
+  get showContextMenuClass (): string {
+    return this.showContextMenu ? ' active' : ''
   }
 
   private mPaused = true
@@ -321,6 +328,15 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       `transform: translateX(calc(${-this.panelTranslations.fullscreen}px - 50%))`
     )
   }
+  private mContextMenuPosition = ''
+  get contextMenuPosition (): SafeStyle {
+    return this.sanitization.bypassSecurityTrustStyle(this.mContextMenuPosition)
+  }
+  languages = this.service.i18n.languages
+  contextMenuState = 'root'
+  get version () {
+    return this.service.version
+  }
 
   private timeUpdate: Subscription
   private controlHoveredChange: Subscription
@@ -355,7 +371,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     private element: ElementRef,
     private sanitization: DomSanitizer,
     private service: UshioService
-  ) { }
+  ) {
+    this.showLangMenu = this.showLangMenu.bind(this)
+    this.onComponentClicked = this.onComponentClicked.bind(this)
+    this.onDocumentClicked = this.onDocumentClicked.bind(this)
+  }
 
   ngOnInit () {
     this.mPaused = this.video.nativeElement.paused
@@ -685,12 +705,39 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
     }))
     this.setAllControlPanelsPosition()
+    this.subscriptions.push(fromEvent(this.element.nativeElement, 'contextmenu')
+      .subscribe((e: MouseEvent) => {
+        e.preventDefault()
+        const outer = this.element.nativeElement.getBoundingClientRect()
+        const panel = this.contextMenu.nativeElement.getBoundingClientRect()
+        if (e.clientX + panel.width + 20 > outer.right) {
+          if (e.clientY + panel.height + 20 > outer.bottom) {
+            this.mContextMenuPosition = `right: ${outer.right - e.clientX}px; bottom: ${outer.bottom - e.clientY}px`
+          } else {
+            this.mContextMenuPosition = `right: ${outer.right - e.clientX}px; top: ${e.clientY - outer.top}px`
+          }
+        } else {
+          if (e.clientY + panel.height + 20 > outer.bottom) {
+            this.mContextMenuPosition = `left: ${e.clientX - outer.left}px; bottom: ${outer.bottom - e.clientY}px`
+          } else {
+            this.mContextMenuPosition = `left: ${e.clientX - outer.left}px; top: ${e.clientY - outer.top}px`
+          }
+        }
+        this.contextMenuState = 'root'
+        this.showContextMenu = true
+      }))
+    this.langContextMenuOption.nativeElement.addEventListener('click', this.showLangMenu, true)
+    this.element.nativeElement.addEventListener('click', this.onComponentClicked, true)
+    document.addEventListener('click', this.onDocumentClicked, true)
   }
 
   ngOnDestroy () {
     if (this.timeUpdate) this.timeUpdate.unsubscribe()
     if (this.controlHoveredChange) this.controlHoveredChange.unsubscribe()
     this.subscriptions.forEach(sub => sub.unsubscribe())
+    this.langContextMenuOption.nativeElement.removeEventListener('click', this.showLangMenu, true)
+    this.element.nativeElement.removeEventListener('click', this.onComponentClicked, true)
+    document.removeEventListener('click', this.onDocumentClicked, true)
   }
 
   private updateSources () {
@@ -886,6 +933,25 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     } else {
       document.exitFullscreen()
     }
+  }
+
+  showLangMenu () {
+    this.contextMenuState = 'lang'
+    this.showContextMenu = true
+  }
+
+  onComponentClicked () {
+    this.focus = true
+    this.showContextMenu = false
+  }
+
+  onDocumentClicked () {
+    this.focus = false
+    this.showContextMenu = false
+  }
+
+  setLanguage (code) {
+    this.service.i18n.setLanguage(code)
   }
 
 }
