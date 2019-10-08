@@ -37,6 +37,9 @@ class UshioI18nProvider {
   get languages () {
     return Object.entries(this.i18nSource).map(entry => [entry[0], entry[1].lang])
   }
+  get language () {
+    return this.lang
+  }
 
   constructor () {
     for (const langCode of navigator.languages) {

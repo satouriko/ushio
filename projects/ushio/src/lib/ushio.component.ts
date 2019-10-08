@@ -47,6 +47,7 @@ export class UshioSubtitles {
   @Input() type: string
   @Input() name: string
   @Input() class: string
+  @Input() srclang: string
   @Input() default: boolean
 }
 
@@ -431,7 +432,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         )
       )
     }
-    const subtitlesAttr = ['value', 'type', 'src', 'name', 'class', 'default']
+    const subtitlesAttr = ['value', 'type', 'src', 'name', 'class', 'default', 'srclang']
     const subtitlesChange$ = onContentChildrenOrSlotChanged$(
       subtitlesAttr, this.subtitlesContentChildren, this.subtitlesSlotChange$)
     this.subscriptions.push(subtitlesChange$.subscribe(async (subtitles) => {
@@ -855,7 +856,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         name: sub.name || 'Untitled',
         class: sub.class || '',
         parsedSubtitles: undefined,
-        enabled: sub.default
+        enabled: sub.default || sub.srclang === this.service.i18n.language
       }
       sub.type = sub.type || ''
       sub.type = sub.type.toLowerCase()
