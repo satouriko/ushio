@@ -11,18 +11,24 @@
   <title>Untitled</title>
 </head>
 <body>
-  <script src="./dist/ushio/bundles/ushio.min.js"></script>
+  <script src="//unpkg.com/ushio@4/bundles/ushio.min.js"></script>
 </body>
 </html>
 ```
 
-2. Use tag `ushio-player` to add a video.
+The above link uses an ES2015 code base. If you need compatibility with older browsers, you can import it like this,
+
+```html
+<script src="//unpkg.com/ushio@4/bundles/ushio-es5.min.js"></script>
+```
+
+2. Use tag `ushio-player` wherever to add a video.
 
 ```html
 <ushio-player src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></ushio-player>
 ```
 
-3. The element will renders as follows.
+3. The element will render as follows.
 
 <div class="video-wrap">
 <ushio-player src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></ushio-player>

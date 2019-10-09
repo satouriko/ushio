@@ -34,7 +34,7 @@ export class UshioSource {
   @Input() type: string
   @Input() shortname: string
   @Input() name: string
-  @Input() default: string
+  @Input() default: boolean
 }
 
 @Directive({
@@ -75,6 +75,16 @@ interface Subtitles {
   encapsulation: ViewEncapsulation.ShadowDom
 })
 export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, OnDestroy {
+
+  private mInjectedStyles = []
+  get injectedStyles () {
+    return this.mInjectedStyles.map(
+      style => this.sanitization.bypassSecurityTrustHtml(`
+      <style>
+       ${style}
+      </style>
+    `))
+  }
 
   @Input() set src (src) {
     this.mSrc = src
@@ -215,7 +225,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   get showControl () {
     return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown)
   }
-  @Output() showControlChanged = new EventEmitter<boolean>()
+  @Output() showControlChange = new EventEmitter<boolean>()
   get thumbMouseDownClass (): string {
     return this.thumbMouseDown ? ' thumb-mouse-down' : ''
   }
@@ -263,6 +273,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   @Output() currentTimeChange = new EventEmitter<number>()
   private duration = 0
+  @Output() durationChange = new EventEmitter<number>()
   private bufferedTime = 0
   private waiting = false
   @Output() waitingChange = new EventEmitter<boolean>()
@@ -628,6 +639,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'loadedmetadata')
       .subscribe(() => {
         this.duration = this.video.nativeElement.duration
+        this.durationChange.emit(this.duration)
       }))
     this.video.nativeElement.volume = this.mVolume
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'volumechange')
@@ -738,7 +750,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       distinctUntilChanged()
     )
     this.subscriptions.push(hoverStateChange$.subscribe(e => {
-      this.showControlChanged.emit(e)
+      this.showControlChange.emit(e)
     }))
     const volumeMouseTouchDown$ = onMouseTouchDown$(
       this.volumeBar.nativeElement,
@@ -1005,6 +1017,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.sourcesSlotUpdate$.next(
       e.target.assignedNodes().filter(node => node.nodeName === 'USHIO-SOURCE')
     )
+    this.mInjectedStyles = e.target.assignedNodes()
+      .filter(node => node.nodeName === 'STYLE').map(node => node.innerHTML)
   }
 
   onVideoMaskClicked () {

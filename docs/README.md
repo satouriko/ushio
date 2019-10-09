@@ -1,5 +1,12 @@
 # Ushio Player
 
+[![npm](https://flat.badgen.net/npm/v/ushio)](https://www.npmjs.com/package/ushio)
+[![npm](https://flat.badgen.net/npm/dw/ushio)](https://www.npmjs.com/package/ushio)
+[![Badgesize](https://flat.badgen.net/badgesize/gzip/rikakomoe/ushio/master/dist/ushio/bundles/ushio.min.js)](https://www.npmjs.com/package/ushio)
+[![JavaScript Style Guide](https://flat.badgen.net/badge/code%20style/standard/green)](https://standardjs.com)
+[![Gitmoji](https://flat.badgen.net/badge/gitmoji/%F0%9F%98%9C%20%F0%9F%98%8D/FFDD67)](https://gitmoji.carloscuesta.me)
+
+
 🍭  Ushio is an HTML video player, built with the trendy technology "web component".
 You are now able to have your favorite, lovely and good-looking video player integrated,
 by a simple HTML tag.
@@ -28,7 +35,7 @@ like your blog ;)
 4. Extensible. Injecting stylesheets is super easy. This player meets your need
 in most situation.
 
-5. Full-feature. Ushio player is highly completed. Volume change, playback rate
+5. Full-featured. Ushio player is highly completed. Volume change, playback rate
 change, hot key and everything you'll use in a normal HTML video player, they're
 just here.
 

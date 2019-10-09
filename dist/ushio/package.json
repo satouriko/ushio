@@ -1,0 +1,34 @@
+{
+  "name": "ushio",
+  "version": "4.0.0",
+  "description": "Get your favorite html video player in one simple html tag.",
+  "peerDependencies": {
+    "@angular/common": "^8.2.8",
+    "@angular/core": "^8.2.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rikakomoe/ushio.git"
+  },
+  "author": "rikakomoe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rikakomoe/ushio/issues"
+  },
+  "homepage": "https://github.com/rikakomoe/ushio#readme",
+  "main": "bundles/ushio.umd.js",
+  "module": "fesm5/ushio.js",
+  "es2015": "fesm2015/ushio.js",
+  "esm5": "esm5/ushio.js",
+  "esm2015": "esm2015/ushio.js",
+  "fesm5": "fesm5/ushio.js",
+  "fesm2015": "fesm2015/ushio.js",
+  "typings": "ushio.d.ts",
+  "metadata": "ushio.metadata.json",
+  "sideEffects": false,
+  "dependencies": {
+    "tslib": "^1.9.0"
+  },
+  "unpkg": "bundles/ushio.min.js",
+  "jsdelivr": "bundles/ushio.min.js"
+}

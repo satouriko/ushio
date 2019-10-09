@@ -5,5 +5,4 @@
 * [Control Buttons](controls.md)
 * [Styling](styling.md)
 * [Thumbnails](thumbnails.md)
-* [i18n](i18n.md)
 * [Use in Angular](angular.md)

@@ -8,7 +8,8 @@
     "build-demo": "gulp buildDemo",
     "test": "ng test",
     "lint": "ng lint --fix",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "docs:dev": "docsify serve docs"
   },
   "private": true,
   "dependencies": {

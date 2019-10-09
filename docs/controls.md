@@ -1,6 +1,6 @@
 # Control Buttons
 
-You can exactly set whether each control buttons to be shown or not.
+You can exactly set whether each control button to be shown or not.
 
 ```html
 <ushio-player

@@ -46,7 +46,7 @@ The above code renders as follows.
 
 ## Add different type of sources
 
-The web specification allows multiple `source` tag in `video` since supported video types vary from different browsers.
+The web specification allows multiple `source` tags in `video` since supported video types vary from different browsers.
 You can keep using this feature, just keep in mind to make the same video have the same `name` and `shortname`.
 
 ```html
