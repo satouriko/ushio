@@ -576,6 +576,7 @@
     }
     var UshioComponent = /** @class */ (function () {
         function UshioComponent(element, zone, changeDetectorRef, sanitization, service) {
+            var _this = this;
             this.element = element;
             this.zone = zone;
             this.changeDetectorRef = changeDetectorRef;
@@ -604,6 +605,11 @@
             this.subtitlesSlotChange$ = this.subtitlesSlotUpdate$.asObservable().pipe(operators.distinctUntilChanged());
             this.sourcesSlotChange$ = this.sourcesSlotUpdate$.asObservable().pipe(operators.distinctUntilChanged());
             this.mobileShowControlStateChange$ = new rxjs.Subject();
+            this.showControlProbablyChanged$ = new rxjs.Subject();
+            this.showControlChange$ = this.showControlProbablyChanged$.asObservable().pipe(operators.map((/**
+             * @return {?}
+             */
+            function () { return _this.showControl; })), operators.distinctUntilChanged());
             this.interactMode = 'desktop';
             this.focus = false;
             this.mShowControl = false;
@@ -645,6 +651,14 @@
             this.languages = this.service.i18n.languages;
             this.contextMenuState = 'root';
             this.subscriptions = [];
+            this.mouseSubscriptions = [];
+            this.keySubscriptions = [];
+            this.mouseMove$ = rxjs.fromEvent(document, 'mousemove');
+            this.mouseUp$ = rxjs.fromEvent(document, 'mouseup');
+            this.touchMove$ = rxjs.fromEvent(document, 'touchmove');
+            this.touchStart$ = rxjs.fromEvent(document, 'touchstart');
+            this.touchEnd$ = rxjs.merge(rxjs.fromEvent(document, 'touchend'), rxjs.fromEvent(document, 'touchcancel'));
+            this.mouseTouchUp$ = rxjs.merge(this.mouseUp$, this.touchEnd$);
             this.t = this.service.i18n.t;
             this.showLangMenu = this.showLangMenu.bind(this);
             this.onComponentClicked = this.onComponentClicked.bind(this);
@@ -875,7 +889,7 @@
              * @return {?}
              */
             function () {
-                return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown);
+                return !!(this.mShowControl || this.mouseDown);
             },
             enumerable: true,
             configurable: true
@@ -1474,29 +1488,134 @@
         /**
          * @return {?}
          */
-        UshioComponent.prototype.ngAfterViewInit = /**
+        UshioComponent.prototype.onUnfocused = /**
+         * @return {?}
+         */
+        function () {
+            this.keySubscriptions.forEach((/**
+             * @param {?} sub
+             * @return {?}
+             */
+            function (sub) { return sub.unsubscribe(); }));
+            this.keySubscriptions = [];
+        };
+        /**
+         * @return {?}
+         */
+        UshioComponent.prototype.onFocused = /**
          * @return {?}
          */
         function () {
             var _this = this;
             /** @type {?} */
-            var mouseMove$ = rxjs.fromEvent(document, 'mousemove');
-            /** @type {?} */
-            var mouseUp$ = rxjs.fromEvent(document, 'mouseup');
-            /** @type {?} */
-            var touchMove$ = rxjs.fromEvent(document, 'touchmove');
-            /** @type {?} */
-            var touchStart$ = rxjs.fromEvent(document, 'touchstart');
-            /** @type {?} */
-            var touchEnd$ = rxjs.merge(rxjs.fromEvent(document, 'touchend'), rxjs.fromEvent(document, 'touchcancel'));
-            /** @type {?} */
-            var mouseTouchUp$ = rxjs.merge(mouseUp$, touchEnd$);
-            touchStart$.subscribe((/**
+            var onKeyDown$ = (/**
+             * @param {?} code
+             * @return {?}
+             */
+            function (code) { return rxjs.fromEvent(document, 'keydown').pipe(operators.filter((/**
+             * @param {?} e
+             * @return {?}
+             */
+            function (e) { return _this.focus && e.code === code; })), operators.tap((/**
+             * @param {?} e
+             * @return {?}
+             */
+            function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }))); });
+            this.zone.runOutsideAngular((/**
              * @return {?}
              */
             function () {
-                _this.interactMode = 'mobile';
+                _this.keySubscriptions.push(onKeyDown$('Space').subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.togglePlay();
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.keySubscriptions.push(onKeyDown$('ArrowRight').subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.mCurrentTime = _this.mCurrentTime + 5 < _this.duration ? _this.mCurrentTime + 5 : _this.duration;
+                    _this.video.nativeElement.currentTime = _this.mCurrentTime;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.keySubscriptions.push(onKeyDown$('ArrowLeft').subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.mCurrentTime = _this.mCurrentTime - 5 > 0 ? _this.mCurrentTime - 5 : 0;
+                    _this.video.nativeElement.currentTime = _this.mCurrentTime;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.keySubscriptions.push(onKeyDown$('ArrowUp').subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.mVolume = _this.mVolume + 0.1 < 0.999996 ? _this.mVolume + 0.1 : 1;
+                    _this.video.nativeElement.volume = _this.mVolume;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.keySubscriptions.push(onKeyDown$('ArrowDown').subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.mVolume = _this.mVolume - 0.1 > 0.000004 ? _this.mVolume - 0.1 : 0;
+                    _this.video.nativeElement.volume = _this.mVolume;
+                    _this.changeDetectorRef.detectChanges();
+                })));
             }));
+            /** @type {?} */
+            var showVolumeHint$ = rxjs.merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
+                .pipe(operators.switchMap((/**
+             * @return {?}
+             */
+            function () { return rxjs.merge(rxjs.of(true), rxjs.timer(1000).pipe(operators.mapTo(false))); })), operators.distinctUntilChanged());
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.keySubscriptions.push(showVolumeHint$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.showVolumeHint = e;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.setAllControlPanelsPosition();
+            }));
+        };
+        /**
+         * @return {?}
+         */
+        UshioComponent.prototype.onControlDismiss = /**
+         * @return {?}
+         */
+        function () {
+            this.mouseSubscriptions.forEach((/**
+             * @param {?} sub
+             * @return {?}
+             */
+            function (sub) { return sub.unsubscribe(); }));
+            this.mouseSubscriptions = [];
+            if (this.controlHoveredChange) {
+                this.controlHoveredChange.unsubscribe();
+                this.controlHoveredChange = null;
+            }
+        };
+        /**
+         * @return {?}
+         */
+        UshioComponent.prototype.onControlShown = /**
+         * @return {?}
+         */
+        function () {
+            var _this = this;
             /** @type {?} */
             var ifMouseInArea = (/**
              * @param {?} e
@@ -1523,7 +1642,7 @@
              * @return {?}
              */
             function (btns) {
-                return mouseMove$.pipe(operators.switchMap((/**
+                return _this.mouseMove$.pipe(operators.switchMap((/**
                  * @param {?} e
                  * @return {?}
                  */
@@ -1548,7 +1667,372 @@
                 })), operators.distinctUntilChanged());
             });
             /** @type {?} */
-            var desktopShowControlStateChange$ = mouseMove$.pipe(operators.filter((/**
+            var mouseHoverProgressState$ = this.mouseMove$.pipe(operators.filter((/**
+             * @return {?}
+             */
+            function () { return (_this.interactMode === 'desktop'); })), operators.map((/**
+             * @param {?} e
+             * @return {?}
+             */
+            function (e) {
+                /** @type {?} */
+                var rect = _this.slider.nativeElement.getBoundingClientRect();
+                /** @type {?} */
+                var yCenter = (rect.top + rect.bottom) / 2;
+                if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
+                    /** @type {?} */
+                    var left = e.clientX - rect.left;
+                    /** @type {?} */
+                    var containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10;
+                    /** @type {?} */
+                    var timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10;
+                    return { left: left, containerLeft: containerLeft, timeLeft: timeLeft, width: rect.width };
+                }
+                else {
+                    return false;
+                }
+            })), operators.distinctUntilChanged((/**
+             * @param {?} a
+             * @param {?} b
+             * @return {?}
+             */
+            function (a, b) {
+                if (typeof a !== typeof b) {
+                    return false;
+                }
+                else if (typeof a === 'object' && typeof b === 'object') {
+                    return a.left === b.left && a.containerLeft === b.containerLeft
+                        && a.timeLeft === b.timeLeft && a.width === b.width;
+                }
+                else {
+                    return a === b;
+                }
+            })));
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.mouseSubscriptions.push(mouseHoverProgressState$.subscribe((/**
+                 * @param {?} state
+                 * @return {?}
+                 */
+                function (state) {
+                    if (typeof state === 'boolean') {
+                        _this.showProgressDetail = state;
+                    }
+                    else {
+                        _this.showProgressDetail = true;
+                        _this.mProgressDetailPosition = "left: " + state.left + "px";
+                        _this.mProgressDetailContainerPosition = "left: " + state.containerLeft + "px";
+                        _this.mProgressDetailTimePosition = "left: " + state.timeLeft + "px";
+                        _this.mProgressDetailPositionRate = state.left / state.width;
+                    }
+                    _this.changeDetectorRef.detectChanges();
+                })));
+            }));
+            /** @type {?} */
+            var mapToRate = (/**
+             * @param {?} element
+             * @param {?} progress
+             * @param {?} total
+             * @return {?}
+             */
+            function (element, progress, total) { return operators.map((/**
+             * @param {?} moveEvent
+             * @return {?}
+             */
+            function (moveEvent) {
+                /** @type {?} */
+                var eventCoordinate = moveEvent instanceof TouchEvent
+                    ? moveEvent.changedTouches[0]
+                    : moveEvent;
+                /** @type {?} */
+                var rect = element.getBoundingClientRect();
+                /** @type {?} */
+                var p = progress(eventCoordinate, rect);
+                /** @type {?} */
+                var t = total(rect);
+                if (p < 0)
+                    p = 0;
+                else if (p > t)
+                    p = t;
+                return p / t;
+            })); });
+            /** @type {?} */
+            var onMouseTouchDown$ = (/**
+             * @param {?} element
+             * @param {?} progress
+             * @param {?} total
+             * @return {?}
+             */
+            function (element, progress, total) {
+                return rxjs.merge(rxjs.fromEvent(element, 'mousedown'), rxjs.fromEvent(element, 'touchstart')).pipe(mapToRate(element, progress, total));
+            });
+            /** @type {?} */
+            var onMouseTouchDrag$ = (/**
+             * @param {?} element
+             * @param {?} progress
+             * @param {?} total
+             * @return {?}
+             */
+            function (element, progress, total) {
+                return rxjs.merge(rxjs.fromEvent(element, 'mousedown').pipe(mapToRate(element, progress, total), operators.concatMap((/**
+                 * @return {?}
+                 */
+                function () {
+                    return _this.mouseMove$.pipe(operators.takeUntil(_this.mouseUp$), mapToRate(element, progress, total));
+                }))), rxjs.fromEvent(element, 'touchstart').pipe(mapToRate(element, progress, total), operators.concatMap((/**
+                 * @return {?}
+                 */
+                function () {
+                    return _this.touchMove$.pipe(operators.takeUntil(_this.touchEnd$), mapToRate(element, progress, total));
+                }))));
+            });
+            /** @type {?} */
+            var thumbMouseTouchDown$ = onMouseTouchDown$(this.slider.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.width); }));
+            /** @type {?} */
+            var thumbTouchDrag$ = onMouseTouchDrag$(this.slider.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.width); }));
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.mouseSubscriptions.push(thumbMouseTouchDown$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.thumbMouseDown = true;
+                    _this.timeUpdate.unsubscribe();
+                    _this.mCurrentTime = e * _this.duration;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.mouseSubscriptions.push(thumbTouchDrag$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.mCurrentTime = e * _this.duration;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.mouseSubscriptions.push(_this.mouseTouchUp$.subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    if (_this.thumbMouseDown) {
+                        _this.video.nativeElement.currentTime = _this.mCurrentTime;
+                        _this.subscribeTimeUpdate();
+                        _this.thumbMouseDown = false;
+                        _this.showControlProbablyChanged$.next(0);
+                        _this.changeDetectorRef.detectChanges();
+                    }
+                })));
+            }));
+            /** @type {?} */
+            var controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
+                    btnElement: this.volumeBtn.nativeElement,
+                    popUpElement: this.volumePanel.nativeElement,
+                    btnName: 'volume'
+                }, {
+                    btnElement: this.settingsBtn.nativeElement,
+                    popUpElement: this.settingsPanel.nativeElement,
+                    btnName: 'settings'
+                }, {
+                    btnElement: this.sourceBtn.nativeElement,
+                    popUpElement: this.sourcePanel.nativeElement,
+                    btnName: 'source'
+                }, {
+                    btnElement: this.subtitlesBtn.nativeElement,
+                    popUpElement: this.subtitlesPanel.nativeElement,
+                    btnName: 'subtitles'
+                }]);
+            /** @type {?} */
+            var subscribeControlHoveredChange = (/**
+             * @return {?}
+             */
+            function () {
+                _this.zone.runOutsideAngular((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.controlHoveredChange = controlHoverStateChange$.subscribe((/**
+                     * @param {?} e
+                     * @return {?}
+                     */
+                    function (e) {
+                        _this.controlHoveredClass = e;
+                        _this.setAllControlPanelsPosition();
+                        _this.changeDetectorRef.detectChanges();
+                    }));
+                }));
+            });
+            subscribeControlHoveredChange();
+            /** @type {?} */
+            var volumeMouseTouchDown$ = onMouseTouchDown$(this.volumeBar.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (rect.bottom - moveEvent.clientY); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.height); }));
+            /** @type {?} */
+            var volumeTouchDrag$ = onMouseTouchDrag$(this.volumeBar.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (rect.bottom - moveEvent.clientY); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.height); }));
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.mouseSubscriptions.push(volumeMouseTouchDown$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    if (!_this.controlMouseDown) {
+                        _this.controlMouseDown = true;
+                        _this.controlHoveredChange.unsubscribe();
+                    }
+                    _this.video.nativeElement.muted = false;
+                    _this.video.nativeElement.volume = e;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.mouseSubscriptions.push(volumeTouchDrag$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.video.nativeElement.volume = e;
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.mouseSubscriptions.push(_this.mouseTouchUp$.subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    if (_this.controlMouseDown) {
+                        subscribeControlHoveredChange();
+                        _this.controlMouseDown = false;
+                        _this.showControlProbablyChanged$.next(0);
+                        _this.changeDetectorRef.detectChanges();
+                    }
+                })));
+            }));
+            /** @type {?} */
+            var speedMouseTouchDown$ = onMouseTouchDown$(this.speedBar.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.width); }));
+            /** @type {?} */
+            var speedTouchDrag$ = onMouseTouchDrag$(this.speedBar.nativeElement, (/**
+             * @param {?} moveEvent
+             * @param {?} rect
+             * @return {?}
+             */
+            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
+             * @param {?} rect
+             * @return {?}
+             */
+            function (rect) { return (rect.width); }));
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.mouseSubscriptions.push(speedMouseTouchDown$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    if (!_this.controlMouseDown) {
+                        _this.controlMouseDown = true;
+                        _this.controlHoveredChange.unsubscribe();
+                    }
+                    _this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
+                    _this.changeDetectorRef.detectChanges();
+                })));
+                _this.mouseSubscriptions.push(speedTouchDrag$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                function (e) {
+                    _this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
+                    _this.changeDetectorRef.detectChanges();
+                })));
+            }));
+        };
+        /**
+         * @private
+         * @return {?}
+         */
+        UshioComponent.prototype.subscribeTimeUpdate = /**
+         * @private
+         * @return {?}
+         */
+        function () {
+            var _this = this;
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            function () {
+                _this.timeUpdate = rxjs.fromEvent(_this.video.nativeElement, 'timeupdate')
+                    .subscribe((/**
+                 * @return {?}
+                 */
+                function () {
+                    _this.mCurrentTime = _this.video.nativeElement.currentTime;
+                    _this.currentTimeChange.emit(_this.mCurrentTime);
+                    _this.updateFlyingSubtitles(_this.mCurrentTime);
+                    _this.changeDetectorRef.detectChanges();
+                }));
+            }));
+        };
+        /**
+         * @return {?}
+         */
+        UshioComponent.prototype.ngAfterViewInit = /**
+         * @return {?}
+         */
+        function () {
+            var _this = this;
+            this.touchStart$.subscribe((/**
+             * @return {?}
+             */
+            function () {
+                _this.interactMode = 'mobile';
+            }));
+            /** @type {?} */
+            var desktopShowControlStateChange$ = this.mouseMove$.pipe(operators.filter((/**
              * @return {?}
              */
             function () { return (_this.interactMode === 'desktop'); })), operators.map((/**
@@ -1600,71 +2084,8 @@
                  */
                 function (state) {
                     _this.mShowControl = state.showControl;
+                    _this.showControlProbablyChanged$.next(0);
                     _this.mNoCursor = state.noCursor;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-            }));
-            /** @type {?} */
-            var mouseHoverProgressState$ = mouseMove$.pipe(operators.filter((/**
-             * @return {?}
-             */
-            function () { return (_this.interactMode === 'desktop'); })), operators.map((/**
-             * @param {?} e
-             * @return {?}
-             */
-            function (e) {
-                /** @type {?} */
-                var rect = _this.slider.nativeElement.getBoundingClientRect();
-                /** @type {?} */
-                var yCenter = (rect.top + rect.bottom) / 2;
-                if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
-                    /** @type {?} */
-                    var left = e.clientX - rect.left;
-                    /** @type {?} */
-                    var containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10;
-                    /** @type {?} */
-                    var timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10;
-                    return { left: left, containerLeft: containerLeft, timeLeft: timeLeft, width: rect.width };
-                }
-                else {
-                    return false;
-                }
-            })), operators.distinctUntilChanged((/**
-             * @param {?} a
-             * @param {?} b
-             * @return {?}
-             */
-            function (a, b) {
-                if (typeof a !== typeof b) {
-                    return false;
-                }
-                else if (typeof a === 'object' && typeof b === 'object') {
-                    return a.left === b.left && a.containerLeft === b.containerLeft
-                        && a.timeLeft === b.timeLeft && a.width === b.width;
-                }
-                else {
-                    return a === b;
-                }
-            })));
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(mouseHoverProgressState$.subscribe((/**
-                 * @param {?} state
-                 * @return {?}
-                 */
-                function (state) {
-                    if (typeof state === 'boolean') {
-                        _this.showProgressDetail = state;
-                    }
-                    else {
-                        _this.showProgressDetail = true;
-                        _this.mProgressDetailPosition = "left: " + state.left + "px";
-                        _this.mProgressDetailContainerPosition = "left: " + state.containerLeft + "px";
-                        _this.mProgressDetailTimePosition = "left: " + state.timeLeft + "px";
-                        _this.mProgressDetailPositionRate = state.left / state.width;
-                    }
                     _this.changeDetectorRef.detectChanges();
                 })));
             }));
@@ -1688,28 +2109,7 @@
                 _this.mPaused = false;
                 _this.pausedChange.emit(false);
             })));
-            /** @type {?} */
-            var subscribeTimeUpdate = (/**
-             * @return {?}
-             */
-            function () {
-                _this.zone.runOutsideAngular((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.timeUpdate = rxjs.fromEvent(_this.video.nativeElement, 'timeupdate')
-                        .subscribe((/**
-                     * @return {?}
-                     */
-                    function () {
-                        _this.mCurrentTime = _this.video.nativeElement.currentTime;
-                        _this.currentTimeChange.emit(_this.mCurrentTime);
-                        _this.updateFlyingSubtitles(_this.mCurrentTime);
-                        _this.changeDetectorRef.detectChanges();
-                    }));
-                }));
-            });
-            subscribeTimeUpdate();
+            this.subscribeTimeUpdate();
             this.subscriptions.push(rxjs.fromEvent(this.video.nativeElement, 'waiting')
                 .subscribe((/**
              * @return {?}
@@ -1777,363 +2177,6 @@
                 _this.mPlaybackRate = _this.video.nativeElement.playbackRate;
                 _this.playbackRateChange.emit(_this.mPlaybackRate);
             })));
-            /** @type {?} */
-            var mapToRate = (/**
-             * @param {?} element
-             * @param {?} progress
-             * @param {?} total
-             * @return {?}
-             */
-            function (element, progress, total) { return operators.map((/**
-             * @param {?} moveEvent
-             * @return {?}
-             */
-            function (moveEvent) {
-                /** @type {?} */
-                var eventCoordinate = moveEvent instanceof TouchEvent
-                    ? moveEvent.changedTouches[0]
-                    : moveEvent;
-                /** @type {?} */
-                var rect = element.getBoundingClientRect();
-                /** @type {?} */
-                var p = progress(eventCoordinate, rect);
-                /** @type {?} */
-                var t = total(rect);
-                if (p < 0)
-                    p = 0;
-                else if (p > t)
-                    p = t;
-                return p / t;
-            })); });
-            /** @type {?} */
-            var onMouseTouchDown$ = (/**
-             * @param {?} element
-             * @param {?} progress
-             * @param {?} total
-             * @return {?}
-             */
-            function (element, progress, total) {
-                return rxjs.merge(rxjs.fromEvent(element, 'mousedown'), rxjs.fromEvent(element, 'touchstart')).pipe(mapToRate(element, progress, total));
-            });
-            /** @type {?} */
-            var onMouseTouchDrag$ = (/**
-             * @param {?} element
-             * @param {?} progress
-             * @param {?} total
-             * @return {?}
-             */
-            function (element, progress, total) {
-                return rxjs.merge(rxjs.fromEvent(element, 'mousedown').pipe(mapToRate(element, progress, total), operators.concatMap((/**
-                 * @return {?}
-                 */
-                function () {
-                    return mouseMove$.pipe(operators.takeUntil(mouseUp$), mapToRate(element, progress, total));
-                }))), rxjs.fromEvent(element, 'touchstart').pipe(mapToRate(element, progress, total), operators.concatMap((/**
-                 * @return {?}
-                 */
-                function () {
-                    return touchMove$.pipe(operators.takeUntil(touchEnd$), mapToRate(element, progress, total));
-                }))));
-            });
-            /** @type {?} */
-            var thumbMouseTouchDown$ = onMouseTouchDown$(this.slider.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.width); }));
-            /** @type {?} */
-            var thumbTouchDrag$ = onMouseTouchDrag$(this.slider.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.width); }));
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(thumbMouseTouchDown$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.thumbMouseDown = true;
-                    _this.timeUpdate.unsubscribe();
-                    _this.mCurrentTime = e * _this.duration;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(thumbTouchDrag$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.mCurrentTime = e * _this.duration;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(mouseTouchUp$.subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    if (_this.thumbMouseDown) {
-                        _this.video.nativeElement.currentTime = _this.mCurrentTime;
-                        subscribeTimeUpdate();
-                        _this.thumbMouseDown = false;
-                        _this.changeDetectorRef.detectChanges();
-                    }
-                })));
-            }));
-            /** @type {?} */
-            var controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
-                    btnElement: this.volumeBtn.nativeElement,
-                    popUpElement: this.volumePanel.nativeElement,
-                    btnName: 'volume'
-                }, {
-                    btnElement: this.settingsBtn.nativeElement,
-                    popUpElement: this.settingsPanel.nativeElement,
-                    btnName: 'settings'
-                }, {
-                    btnElement: this.sourceBtn.nativeElement,
-                    popUpElement: this.sourcePanel.nativeElement,
-                    btnName: 'source'
-                }, {
-                    btnElement: this.subtitlesBtn.nativeElement,
-                    popUpElement: this.subtitlesPanel.nativeElement,
-                    btnName: 'subtitles'
-                }]);
-            /** @type {?} */
-            var subscribeControlHoveredChange = (/**
-             * @return {?}
-             */
-            function () {
-                _this.zone.runOutsideAngular((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.controlHoveredChange = controlHoverStateChange$.subscribe((/**
-                     * @param {?} e
-                     * @return {?}
-                     */
-                    function (e) {
-                        _this.controlHoveredClass = e;
-                        _this.setAllControlPanelsPosition();
-                        _this.changeDetectorRef.detectChanges();
-                    }));
-                }));
-            });
-            subscribeControlHoveredChange();
-            /** @type {?} */
-            var hoverStateChange$ = rxjs.merge(showControlStateChange$, controlHoverStateChange$).pipe(operators.map((/**
-             * @return {?}
-             */
-            function () { return _this.showControl; })), operators.distinctUntilChanged());
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(hoverStateChange$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.showControlChange.emit(e);
-                })));
-            }));
-            /** @type {?} */
-            var volumeMouseTouchDown$ = onMouseTouchDown$(this.volumeBar.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (rect.bottom - moveEvent.clientY); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.height); }));
-            /** @type {?} */
-            var volumeTouchDrag$ = onMouseTouchDrag$(this.volumeBar.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (rect.bottom - moveEvent.clientY); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.height); }));
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(volumeMouseTouchDown$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    if (!_this.controlMouseDown) {
-                        _this.controlMouseDown = true;
-                        _this.controlHoveredChange.unsubscribe();
-                    }
-                    _this.video.nativeElement.muted = false;
-                    _this.video.nativeElement.volume = e;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(volumeTouchDrag$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.video.nativeElement.volume = e;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(mouseTouchUp$.subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    if (_this.controlMouseDown) {
-                        subscribeControlHoveredChange();
-                        _this.controlMouseDown = false;
-                        _this.changeDetectorRef.detectChanges();
-                    }
-                })));
-            }));
-            /** @type {?} */
-            var speedMouseTouchDown$ = onMouseTouchDown$(this.speedBar.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.width); }));
-            /** @type {?} */
-            var speedTouchDrag$ = onMouseTouchDrag$(this.speedBar.nativeElement, (/**
-             * @param {?} moveEvent
-             * @param {?} rect
-             * @return {?}
-             */
-            function (moveEvent, rect) { return (moveEvent.clientX - rect.left); }), (/**
-             * @param {?} rect
-             * @return {?}
-             */
-            function (rect) { return (rect.width); }));
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(speedMouseTouchDown$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    if (!_this.controlMouseDown) {
-                        _this.controlMouseDown = true;
-                        _this.controlHoveredChange.unsubscribe();
-                    }
-                    _this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(speedTouchDrag$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
-                    _this.changeDetectorRef.detectChanges();
-                })));
-            }));
-            /** @type {?} */
-            var onKeyDown$ = (/**
-             * @param {?} code
-             * @return {?}
-             */
-            function (code) { return rxjs.fromEvent(document, 'keydown').pipe(operators.filter((/**
-             * @param {?} e
-             * @return {?}
-             */
-            function (e) { return _this.focus && e.code === code; })), operators.tap((/**
-             * @param {?} e
-             * @return {?}
-             */
-            function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }))); });
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(onKeyDown$('Space').subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.togglePlay();
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(onKeyDown$('ArrowRight').subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.mCurrentTime = _this.mCurrentTime + 5 < _this.duration ? _this.mCurrentTime + 5 : _this.duration;
-                    _this.video.nativeElement.currentTime = _this.mCurrentTime;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.mCurrentTime = _this.mCurrentTime - 5 > 0 ? _this.mCurrentTime - 5 : 0;
-                    _this.video.nativeElement.currentTime = _this.mCurrentTime;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(onKeyDown$('ArrowUp').subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.mVolume = _this.mVolume + 0.1 < 0.999996 ? _this.mVolume + 0.1 : 1;
-                    _this.video.nativeElement.volume = _this.mVolume;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.subscriptions.push(onKeyDown$('ArrowDown').subscribe((/**
-                 * @return {?}
-                 */
-                function () {
-                    _this.mVolume = _this.mVolume - 0.1 > 0.000004 ? _this.mVolume - 0.1 : 0;
-                    _this.video.nativeElement.volume = _this.mVolume;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-            }));
-            /** @type {?} */
-            var showVolumeHint$ = rxjs.merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
-                .pipe(operators.switchMap((/**
-             * @return {?}
-             */
-            function () { return rxjs.merge(rxjs.of(true), rxjs.timer(1000).pipe(operators.mapTo(false))); })), operators.distinctUntilChanged());
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            function () {
-                _this.subscriptions.push(showVolumeHint$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                function (e) {
-                    _this.showVolumeHint = e;
-                    _this.changeDetectorRef.detectChanges();
-                })));
-                _this.setAllControlPanelsPosition();
-            }));
             this.subscriptions.push(rxjs.fromEvent(this.element.nativeElement, 'contextmenu')
                 .subscribe((/**
              * @param {?} e
@@ -2172,28 +2215,21 @@
                 _this.element.nativeElement.addEventListener('click', _this.onComponentClicked, true);
                 document.addEventListener('click', _this.onDocumentClicked, true);
             }));
-            /** @type {?} */
-            var animationFrame$ = rxjs.of(null, rxjs.animationFrameScheduler).pipe(operators.repeat());
             this.zone.runOutsideAngular((/**
              * @return {?}
              */
             function () {
-                _this.subscriptions.push(animationFrame$.subscribe((/**
+                _this.showControlChange$.subscribe((/**
+                 * @param {?} showControl
                  * @return {?}
                  */
-                function () {
-                    if (!_this.fpsStart)
-                        _this.fpsStart = +new Date();
-                    _this.fpsIndex++;
-                    /** @type {?} */
-                    var fpsCurrent = +new Date();
-                    if (fpsCurrent - _this.fpsStart > 1000) {
-                        _this.fps = ((_this.fpsIndex / (fpsCurrent - _this.fpsStart)) * 1000).toFixed(2);
-                        _this.fpsStart = +new Date();
-                        _this.fpsIndex = 0;
-                        _this.changeDetectorRef.detectChanges();
-                    }
-                })));
+                function (showControl) {
+                    if (showControl)
+                        _this.onControlShown();
+                    else
+                        _this.onControlDismiss();
+                    _this.showControlChange.emit(showControl);
+                }));
             }));
         };
         /**
@@ -2203,15 +2239,18 @@
          * @return {?}
          */
         function () {
-            if (this.timeUpdate)
+            this.onUnfocused();
+            this.onControlDismiss();
+            if (this.timeUpdate) {
                 this.timeUpdate.unsubscribe();
-            if (this.controlHoveredChange)
-                this.controlHoveredChange.unsubscribe();
+                this.timeUpdate = null;
+            }
             this.subscriptions.forEach((/**
              * @param {?} sub
              * @return {?}
              */
             function (sub) { return sub.unsubscribe(); }));
+            this.subscriptions = [];
             this.langContextMenuOption.nativeElement.removeEventListener('click', this.showLangMenu, true);
             this.element.nativeElement.removeEventListener('click', this.onComponentClicked, true);
             document.removeEventListener('click', this.onDocumentClicked, true);
@@ -2622,6 +2661,9 @@
          */
         function () {
             this.focus = true;
+            if (this.keySubscriptions.length === 0) {
+                this.onFocused();
+            }
         };
         /**
          * @return {?}
@@ -2654,7 +2696,36 @@
          * @return {?}
          */
         function () {
+            var _this = this;
             this.showStatisticInfoPanel = !this.showStatisticInfoPanel;
+            if (this.showStatisticInfoPanel) {
+                this.zone.runOutsideAngular((/**
+                 * @return {?}
+                 */
+                function () {
+                    /** @type {?} */
+                    var animationFrame$ = rxjs.of(null, rxjs.animationFrameScheduler).pipe(operators.repeat());
+                    _this.animationFrame = animationFrame$.subscribe((/**
+                     * @return {?}
+                     */
+                    function () {
+                        if (!_this.fpsStart)
+                            _this.fpsStart = +new Date();
+                        _this.fpsIndex++;
+                        /** @type {?} */
+                        var fpsCurrent = +new Date();
+                        if (fpsCurrent - _this.fpsStart > 1000) {
+                            _this.fps = ((_this.fpsIndex / (fpsCurrent - _this.fpsStart)) * 1000).toFixed(2);
+                            _this.fpsStart = +new Date();
+                            _this.fpsIndex = 0;
+                            _this.changeDetectorRef.detectChanges();
+                        }
+                    }));
+                }));
+            }
+            else {
+                this.animationFrame.unsubscribe();
+            }
         };
         UshioComponent.decorators = [
             { type: core.Component, args: [{
@@ -2872,6 +2943,16 @@
          * @private
          */
         UshioComponent.prototype.mobileShowControlStateChange$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.showControlProbablyChanged$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.showControlChange$;
         /** @type {?} */
         UshioComponent.prototype.interactMode;
         /**
@@ -3020,7 +3101,52 @@
          * @type {?}
          * @private
          */
+        UshioComponent.prototype.animationFrame;
+        /**
+         * @type {?}
+         * @private
+         */
         UshioComponent.prototype.subscriptions;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.mouseSubscriptions;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.keySubscriptions;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.mouseMove$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.mouseUp$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.touchMove$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.touchStart$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.touchEnd$;
+        /**
+         * @type {?}
+         * @private
+         */
+        UshioComponent.prototype.mouseTouchUp$;
         /** @type {?} */
         UshioComponent.prototype.t;
         /**

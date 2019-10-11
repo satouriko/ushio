@@ -1,8 +1,8 @@
 import { Injectable, ɵɵdefineInjectable, Directive, Input, EventEmitter, Component, ViewEncapsulation, ElementRef, NgZone, ChangeDetectorRef, Output, ViewChild, ContentChildren, NgModule } from '@angular/core';
 import { __awaiter } from 'tslib';
 import { DomSanitizer } from '@angular/platform-browser';
-import { Subject, merge, of, fromEvent, timer, NEVER, animationFrameScheduler } from 'rxjs';
-import { distinctUntilChanged, map, switchMap, mapTo, filter, concatMap, takeUntil, tap, repeat } from 'rxjs/operators';
+import { Subject, fromEvent, merge, of, timer, NEVER, animationFrameScheduler } from 'rxjs';
+import { distinctUntilChanged, map, filter, tap, switchMap, mapTo, concatMap, takeUntil, repeat } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -367,6 +367,11 @@ class UshioComponent {
         this.subtitlesSlotChange$ = this.subtitlesSlotUpdate$.asObservable().pipe(distinctUntilChanged());
         this.sourcesSlotChange$ = this.sourcesSlotUpdate$.asObservable().pipe(distinctUntilChanged());
         this.mobileShowControlStateChange$ = new Subject();
+        this.showControlProbablyChanged$ = new Subject();
+        this.showControlChange$ = this.showControlProbablyChanged$.asObservable().pipe(map((/**
+         * @return {?}
+         */
+        () => this.showControl)), distinctUntilChanged());
         this.interactMode = 'desktop';
         this.focus = false;
         this.mShowControl = false;
@@ -408,6 +413,14 @@ class UshioComponent {
         this.languages = this.service.i18n.languages;
         this.contextMenuState = 'root';
         this.subscriptions = [];
+        this.mouseSubscriptions = [];
+        this.keySubscriptions = [];
+        this.mouseMove$ = fromEvent(document, 'mousemove');
+        this.mouseUp$ = fromEvent(document, 'mouseup');
+        this.touchMove$ = fromEvent(document, 'touchmove');
+        this.touchStart$ = fromEvent(document, 'touchstart');
+        this.touchEnd$ = merge(fromEvent(document, 'touchend'), fromEvent(document, 'touchcancel'));
+        this.mouseTouchUp$ = merge(this.mouseUp$, this.touchEnd$);
         this.t = this.service.i18n.t;
         this.showLangMenu = this.showLangMenu.bind(this);
         this.onComponentClicked = this.onComponentClicked.bind(this);
@@ -580,7 +593,7 @@ class UshioComponent {
      * @return {?}
      */
     get showControl() {
-        return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown);
+        return !!(this.mShowControl || this.mouseDown);
     }
     /**
      * @return {?}
@@ -989,25 +1002,120 @@ class UshioComponent {
     /**
      * @return {?}
      */
-    ngAfterViewInit() {
+    onUnfocused() {
+        this.keySubscriptions.forEach((/**
+         * @param {?} sub
+         * @return {?}
+         */
+        sub => sub.unsubscribe()));
+        this.keySubscriptions = [];
+    }
+    /**
+     * @return {?}
+     */
+    onFocused() {
         /** @type {?} */
-        const mouseMove$ = fromEvent(document, 'mousemove');
-        /** @type {?} */
-        const mouseUp$ = fromEvent(document, 'mouseup');
-        /** @type {?} */
-        const touchMove$ = fromEvent(document, 'touchmove');
-        /** @type {?} */
-        const touchStart$ = fromEvent(document, 'touchstart');
-        /** @type {?} */
-        const touchEnd$ = merge(fromEvent(document, 'touchend'), fromEvent(document, 'touchcancel'));
-        /** @type {?} */
-        const mouseTouchUp$ = merge(mouseUp$, touchEnd$);
-        touchStart$.subscribe((/**
+        const onKeyDown$ = (/**
+         * @param {?} code
+         * @return {?}
+         */
+        code => fromEvent(document, 'keydown').pipe(filter((/**
+         * @param {?} e
+         * @return {?}
+         */
+        (e) => this.focus && e.code === code)), tap((/**
+         * @param {?} e
+         * @return {?}
+         */
+        e => {
+            e.preventDefault();
+            e.stopPropagation();
+        }))));
+        this.zone.runOutsideAngular((/**
          * @return {?}
          */
         () => {
-            this.interactMode = 'mobile';
+            this.keySubscriptions.push(onKeyDown$('Space').subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.togglePlay();
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.keySubscriptions.push(onKeyDown$('ArrowRight').subscribe((/**
+             * @return {?}
+             */
+            () => {
+                this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration;
+                this.video.nativeElement.currentTime = this.mCurrentTime;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.keySubscriptions.push(onKeyDown$('ArrowLeft').subscribe((/**
+             * @return {?}
+             */
+            () => {
+                this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0;
+                this.video.nativeElement.currentTime = this.mCurrentTime;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.keySubscriptions.push(onKeyDown$('ArrowUp').subscribe((/**
+             * @return {?}
+             */
+            () => {
+                this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1;
+                this.video.nativeElement.volume = this.mVolume;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.keySubscriptions.push(onKeyDown$('ArrowDown').subscribe((/**
+             * @return {?}
+             */
+            () => {
+                this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0;
+                this.video.nativeElement.volume = this.mVolume;
+                this.changeDetectorRef.detectChanges();
+            })));
         }));
+        /** @type {?} */
+        const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
+            .pipe(switchMap((/**
+         * @return {?}
+         */
+        () => merge(of(true), timer(1000).pipe(mapTo(false))))), distinctUntilChanged());
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.keySubscriptions.push(showVolumeHint$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.showVolumeHint = e;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.setAllControlPanelsPosition();
+        }));
+    }
+    /**
+     * @return {?}
+     */
+    onControlDismiss() {
+        this.mouseSubscriptions.forEach((/**
+         * @param {?} sub
+         * @return {?}
+         */
+        sub => sub.unsubscribe()));
+        this.mouseSubscriptions = [];
+        if (this.controlHoveredChange) {
+            this.controlHoveredChange.unsubscribe();
+            this.controlHoveredChange = null;
+        }
+    }
+    /**
+     * @return {?}
+     */
+    onControlShown() {
         /** @type {?} */
         const ifMouseInArea = (/**
          * @param {?} e
@@ -1034,7 +1142,7 @@ class UshioComponent {
          * @return {?}
          */
         (btns) => {
-            return mouseMove$.pipe(switchMap((/**
+            return this.mouseMove$.pipe(switchMap((/**
              * @param {?} e
              * @return {?}
              */
@@ -1048,7 +1156,363 @@ class UshioComponent {
             })), distinctUntilChanged());
         });
         /** @type {?} */
-        const desktopShowControlStateChange$ = mouseMove$.pipe(filter((/**
+        const mouseHoverProgressState$ = this.mouseMove$.pipe(filter((/**
+         * @return {?}
+         */
+        () => (this.interactMode === 'desktop'))), map((/**
+         * @param {?} e
+         * @return {?}
+         */
+        (e) => {
+            /** @type {?} */
+            const rect = this.slider.nativeElement.getBoundingClientRect();
+            /** @type {?} */
+            const yCenter = (rect.top + rect.bottom) / 2;
+            if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
+                /** @type {?} */
+                const left = e.clientX - rect.left;
+                /** @type {?} */
+                const containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10;
+                /** @type {?} */
+                const timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10;
+                return { left, containerLeft, timeLeft, width: rect.width };
+            }
+            else {
+                return false;
+            }
+        })), distinctUntilChanged((/**
+         * @param {?} a
+         * @param {?} b
+         * @return {?}
+         */
+        (a, b) => {
+            if (typeof a !== typeof b) {
+                return false;
+            }
+            else if (typeof a === 'object' && typeof b === 'object') {
+                return a.left === b.left && a.containerLeft === b.containerLeft
+                    && a.timeLeft === b.timeLeft && a.width === b.width;
+            }
+            else {
+                return a === b;
+            }
+        })));
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.mouseSubscriptions.push(mouseHoverProgressState$.subscribe((/**
+             * @param {?} state
+             * @return {?}
+             */
+            state => {
+                if (typeof state === 'boolean') {
+                    this.showProgressDetail = state;
+                }
+                else {
+                    this.showProgressDetail = true;
+                    this.mProgressDetailPosition = `left: ${state.left}px`;
+                    this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`;
+                    this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`;
+                    this.mProgressDetailPositionRate = state.left / state.width;
+                }
+                this.changeDetectorRef.detectChanges();
+            })));
+        }));
+        /** @type {?} */
+        const mapToRate = (/**
+         * @param {?} element
+         * @param {?} progress
+         * @param {?} total
+         * @return {?}
+         */
+        (element, progress, total) => map((/**
+         * @param {?} moveEvent
+         * @return {?}
+         */
+        (moveEvent) => {
+            /** @type {?} */
+            const eventCoordinate = moveEvent instanceof TouchEvent
+                ? moveEvent.changedTouches[0]
+                : moveEvent;
+            /** @type {?} */
+            const rect = element.getBoundingClientRect();
+            /** @type {?} */
+            let p = progress(eventCoordinate, rect);
+            /** @type {?} */
+            const t = total(rect);
+            if (p < 0)
+                p = 0;
+            else if (p > t)
+                p = t;
+            return p / t;
+        })));
+        /** @type {?} */
+        const onMouseTouchDown$ = (/**
+         * @param {?} element
+         * @param {?} progress
+         * @param {?} total
+         * @return {?}
+         */
+        (element, progress, total) => {
+            return merge(fromEvent(element, 'mousedown'), fromEvent(element, 'touchstart')).pipe(mapToRate(element, progress, total));
+        });
+        /** @type {?} */
+        const onMouseTouchDrag$ = (/**
+         * @param {?} element
+         * @param {?} progress
+         * @param {?} total
+         * @return {?}
+         */
+        (element, progress, total) => {
+            return merge(fromEvent(element, 'mousedown').pipe(mapToRate(element, progress, total), concatMap((/**
+             * @return {?}
+             */
+            () => {
+                return this.mouseMove$.pipe(takeUntil(this.mouseUp$), mapToRate(element, progress, total));
+            }))), fromEvent(element, 'touchstart').pipe(mapToRate(element, progress, total), concatMap((/**
+             * @return {?}
+             */
+            () => {
+                return this.touchMove$.pipe(takeUntil(this.touchEnd$), mapToRate(element, progress, total));
+            }))));
+        });
+        /** @type {?} */
+        const thumbMouseTouchDown$ = onMouseTouchDown$(this.slider.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.width)));
+        /** @type {?} */
+        const thumbTouchDrag$ = onMouseTouchDrag$(this.slider.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.width)));
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.mouseSubscriptions.push(thumbMouseTouchDown$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.thumbMouseDown = true;
+                this.timeUpdate.unsubscribe();
+                this.mCurrentTime = e * this.duration;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.mouseSubscriptions.push(thumbTouchDrag$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.mCurrentTime = e * this.duration;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.mouseSubscriptions.push(this.mouseTouchUp$.subscribe((/**
+             * @return {?}
+             */
+            () => {
+                if (this.thumbMouseDown) {
+                    this.video.nativeElement.currentTime = this.mCurrentTime;
+                    this.subscribeTimeUpdate();
+                    this.thumbMouseDown = false;
+                    this.showControlProbablyChanged$.next(0);
+                    this.changeDetectorRef.detectChanges();
+                }
+            })));
+        }));
+        /** @type {?} */
+        const controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
+                btnElement: this.volumeBtn.nativeElement,
+                popUpElement: this.volumePanel.nativeElement,
+                btnName: 'volume'
+            }, {
+                btnElement: this.settingsBtn.nativeElement,
+                popUpElement: this.settingsPanel.nativeElement,
+                btnName: 'settings'
+            }, {
+                btnElement: this.sourceBtn.nativeElement,
+                popUpElement: this.sourcePanel.nativeElement,
+                btnName: 'source'
+            }, {
+                btnElement: this.subtitlesBtn.nativeElement,
+                popUpElement: this.subtitlesPanel.nativeElement,
+                btnName: 'subtitles'
+            }]);
+        /** @type {?} */
+        const subscribeControlHoveredChange = (/**
+         * @return {?}
+         */
+        () => {
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            () => {
+                this.controlHoveredChange = controlHoverStateChange$.subscribe((/**
+                 * @param {?} e
+                 * @return {?}
+                 */
+                e => {
+                    this.controlHoveredClass = e;
+                    this.setAllControlPanelsPosition();
+                    this.changeDetectorRef.detectChanges();
+                }));
+            }));
+        });
+        subscribeControlHoveredChange();
+        /** @type {?} */
+        const volumeMouseTouchDown$ = onMouseTouchDown$(this.volumeBar.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (rect.bottom - moveEvent.clientY)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.height)));
+        /** @type {?} */
+        const volumeTouchDrag$ = onMouseTouchDrag$(this.volumeBar.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (rect.bottom - moveEvent.clientY)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.height)));
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.mouseSubscriptions.push(volumeMouseTouchDown$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                if (!this.controlMouseDown) {
+                    this.controlMouseDown = true;
+                    this.controlHoveredChange.unsubscribe();
+                }
+                this.video.nativeElement.muted = false;
+                this.video.nativeElement.volume = e;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.mouseSubscriptions.push(volumeTouchDrag$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.video.nativeElement.volume = e;
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.mouseSubscriptions.push(this.mouseTouchUp$.subscribe((/**
+             * @return {?}
+             */
+            () => {
+                if (this.controlMouseDown) {
+                    subscribeControlHoveredChange();
+                    this.controlMouseDown = false;
+                    this.showControlProbablyChanged$.next(0);
+                    this.changeDetectorRef.detectChanges();
+                }
+            })));
+        }));
+        /** @type {?} */
+        const speedMouseTouchDown$ = onMouseTouchDown$(this.speedBar.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.width)));
+        /** @type {?} */
+        const speedTouchDrag$ = onMouseTouchDrag$(this.speedBar.nativeElement, (/**
+         * @param {?} moveEvent
+         * @param {?} rect
+         * @return {?}
+         */
+        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
+         * @param {?} rect
+         * @return {?}
+         */
+        (rect) => (rect.width)));
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.mouseSubscriptions.push(speedMouseTouchDown$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                if (!this.controlMouseDown) {
+                    this.controlMouseDown = true;
+                    this.controlHoveredChange.unsubscribe();
+                }
+                this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
+                this.changeDetectorRef.detectChanges();
+            })));
+            this.mouseSubscriptions.push(speedTouchDrag$.subscribe((/**
+             * @param {?} e
+             * @return {?}
+             */
+            e => {
+                this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
+                this.changeDetectorRef.detectChanges();
+            })));
+        }));
+    }
+    /**
+     * @private
+     * @return {?}
+     */
+    subscribeTimeUpdate() {
+        this.zone.runOutsideAngular((/**
+         * @return {?}
+         */
+        () => {
+            this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
+                .subscribe((/**
+             * @return {?}
+             */
+            () => {
+                this.mCurrentTime = this.video.nativeElement.currentTime;
+                this.currentTimeChange.emit(this.mCurrentTime);
+                this.updateFlyingSubtitles(this.mCurrentTime);
+                this.changeDetectorRef.detectChanges();
+            }));
+        }));
+    }
+    /**
+     * @return {?}
+     */
+    ngAfterViewInit() {
+        this.touchStart$.subscribe((/**
+         * @return {?}
+         */
+        () => {
+            this.interactMode = 'mobile';
+        }));
+        /** @type {?} */
+        const desktopShowControlStateChange$ = this.mouseMove$.pipe(filter((/**
          * @return {?}
          */
         () => (this.interactMode === 'desktop'))), map((/**
@@ -1100,71 +1564,8 @@ class UshioComponent {
              */
             state => {
                 this.mShowControl = state.showControl;
+                this.showControlProbablyChanged$.next(0);
                 this.mNoCursor = state.noCursor;
-                this.changeDetectorRef.detectChanges();
-            })));
-        }));
-        /** @type {?} */
-        const mouseHoverProgressState$ = mouseMove$.pipe(filter((/**
-         * @return {?}
-         */
-        () => (this.interactMode === 'desktop'))), map((/**
-         * @param {?} e
-         * @return {?}
-         */
-        (e) => {
-            /** @type {?} */
-            const rect = this.slider.nativeElement.getBoundingClientRect();
-            /** @type {?} */
-            const yCenter = (rect.top + rect.bottom) / 2;
-            if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
-                /** @type {?} */
-                const left = e.clientX - rect.left;
-                /** @type {?} */
-                const containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10;
-                /** @type {?} */
-                const timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10;
-                return { left, containerLeft, timeLeft, width: rect.width };
-            }
-            else {
-                return false;
-            }
-        })), distinctUntilChanged((/**
-         * @param {?} a
-         * @param {?} b
-         * @return {?}
-         */
-        (a, b) => {
-            if (typeof a !== typeof b) {
-                return false;
-            }
-            else if (typeof a === 'object' && typeof b === 'object') {
-                return a.left === b.left && a.containerLeft === b.containerLeft
-                    && a.timeLeft === b.timeLeft && a.width === b.width;
-            }
-            else {
-                return a === b;
-            }
-        })));
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(mouseHoverProgressState$.subscribe((/**
-             * @param {?} state
-             * @return {?}
-             */
-            state => {
-                if (typeof state === 'boolean') {
-                    this.showProgressDetail = state;
-                }
-                else {
-                    this.showProgressDetail = true;
-                    this.mProgressDetailPosition = `left: ${state.left}px`;
-                    this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`;
-                    this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`;
-                    this.mProgressDetailPositionRate = state.left / state.width;
-                }
                 this.changeDetectorRef.detectChanges();
             })));
         }));
@@ -1188,28 +1589,7 @@ class UshioComponent {
             this.mPaused = false;
             this.pausedChange.emit(false);
         })));
-        /** @type {?} */
-        const subscribeTimeUpdate = (/**
-         * @return {?}
-         */
-        () => {
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            () => {
-                this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
-                    .subscribe((/**
-                 * @return {?}
-                 */
-                () => {
-                    this.mCurrentTime = this.video.nativeElement.currentTime;
-                    this.currentTimeChange.emit(this.mCurrentTime);
-                    this.updateFlyingSubtitles(this.mCurrentTime);
-                    this.changeDetectorRef.detectChanges();
-                }));
-            }));
-        });
-        subscribeTimeUpdate();
+        this.subscribeTimeUpdate();
         this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting')
             .subscribe((/**
          * @return {?}
@@ -1277,363 +1657,6 @@ class UshioComponent {
             this.mPlaybackRate = this.video.nativeElement.playbackRate;
             this.playbackRateChange.emit(this.mPlaybackRate);
         })));
-        /** @type {?} */
-        const mapToRate = (/**
-         * @param {?} element
-         * @param {?} progress
-         * @param {?} total
-         * @return {?}
-         */
-        (element, progress, total) => map((/**
-         * @param {?} moveEvent
-         * @return {?}
-         */
-        (moveEvent) => {
-            /** @type {?} */
-            const eventCoordinate = moveEvent instanceof TouchEvent
-                ? moveEvent.changedTouches[0]
-                : moveEvent;
-            /** @type {?} */
-            const rect = element.getBoundingClientRect();
-            /** @type {?} */
-            let p = progress(eventCoordinate, rect);
-            /** @type {?} */
-            const t = total(rect);
-            if (p < 0)
-                p = 0;
-            else if (p > t)
-                p = t;
-            return p / t;
-        })));
-        /** @type {?} */
-        const onMouseTouchDown$ = (/**
-         * @param {?} element
-         * @param {?} progress
-         * @param {?} total
-         * @return {?}
-         */
-        (element, progress, total) => {
-            return merge(fromEvent(element, 'mousedown'), fromEvent(element, 'touchstart')).pipe(mapToRate(element, progress, total));
-        });
-        /** @type {?} */
-        const onMouseTouchDrag$ = (/**
-         * @param {?} element
-         * @param {?} progress
-         * @param {?} total
-         * @return {?}
-         */
-        (element, progress, total) => {
-            return merge(fromEvent(element, 'mousedown').pipe(mapToRate(element, progress, total), concatMap((/**
-             * @return {?}
-             */
-            () => {
-                return mouseMove$.pipe(takeUntil(mouseUp$), mapToRate(element, progress, total));
-            }))), fromEvent(element, 'touchstart').pipe(mapToRate(element, progress, total), concatMap((/**
-             * @return {?}
-             */
-            () => {
-                return touchMove$.pipe(takeUntil(touchEnd$), mapToRate(element, progress, total));
-            }))));
-        });
-        /** @type {?} */
-        const thumbMouseTouchDown$ = onMouseTouchDown$(this.slider.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.width)));
-        /** @type {?} */
-        const thumbTouchDrag$ = onMouseTouchDrag$(this.slider.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.width)));
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(thumbMouseTouchDown$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.thumbMouseDown = true;
-                this.timeUpdate.unsubscribe();
-                this.mCurrentTime = e * this.duration;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(thumbTouchDrag$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.mCurrentTime = e * this.duration;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(mouseTouchUp$.subscribe((/**
-             * @return {?}
-             */
-            () => {
-                if (this.thumbMouseDown) {
-                    this.video.nativeElement.currentTime = this.mCurrentTime;
-                    subscribeTimeUpdate();
-                    this.thumbMouseDown = false;
-                    this.changeDetectorRef.detectChanges();
-                }
-            })));
-        }));
-        /** @type {?} */
-        const controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
-                btnElement: this.volumeBtn.nativeElement,
-                popUpElement: this.volumePanel.nativeElement,
-                btnName: 'volume'
-            }, {
-                btnElement: this.settingsBtn.nativeElement,
-                popUpElement: this.settingsPanel.nativeElement,
-                btnName: 'settings'
-            }, {
-                btnElement: this.sourceBtn.nativeElement,
-                popUpElement: this.sourcePanel.nativeElement,
-                btnName: 'source'
-            }, {
-                btnElement: this.subtitlesBtn.nativeElement,
-                popUpElement: this.subtitlesPanel.nativeElement,
-                btnName: 'subtitles'
-            }]);
-        /** @type {?} */
-        const subscribeControlHoveredChange = (/**
-         * @return {?}
-         */
-        () => {
-            this.zone.runOutsideAngular((/**
-             * @return {?}
-             */
-            () => {
-                this.controlHoveredChange = controlHoverStateChange$.subscribe((/**
-                 * @param {?} e
-                 * @return {?}
-                 */
-                e => {
-                    this.controlHoveredClass = e;
-                    this.setAllControlPanelsPosition();
-                    this.changeDetectorRef.detectChanges();
-                }));
-            }));
-        });
-        subscribeControlHoveredChange();
-        /** @type {?} */
-        const hoverStateChange$ = merge(showControlStateChange$, controlHoverStateChange$).pipe(map((/**
-         * @return {?}
-         */
-        () => this.showControl)), distinctUntilChanged());
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(hoverStateChange$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.showControlChange.emit(e);
-            })));
-        }));
-        /** @type {?} */
-        const volumeMouseTouchDown$ = onMouseTouchDown$(this.volumeBar.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (rect.bottom - moveEvent.clientY)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.height)));
-        /** @type {?} */
-        const volumeTouchDrag$ = onMouseTouchDrag$(this.volumeBar.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (rect.bottom - moveEvent.clientY)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.height)));
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(volumeMouseTouchDown$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                if (!this.controlMouseDown) {
-                    this.controlMouseDown = true;
-                    this.controlHoveredChange.unsubscribe();
-                }
-                this.video.nativeElement.muted = false;
-                this.video.nativeElement.volume = e;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(volumeTouchDrag$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.video.nativeElement.volume = e;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(mouseTouchUp$.subscribe((/**
-             * @return {?}
-             */
-            () => {
-                if (this.controlMouseDown) {
-                    subscribeControlHoveredChange();
-                    this.controlMouseDown = false;
-                    this.changeDetectorRef.detectChanges();
-                }
-            })));
-        }));
-        /** @type {?} */
-        const speedMouseTouchDown$ = onMouseTouchDown$(this.speedBar.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.width)));
-        /** @type {?} */
-        const speedTouchDrag$ = onMouseTouchDrag$(this.speedBar.nativeElement, (/**
-         * @param {?} moveEvent
-         * @param {?} rect
-         * @return {?}
-         */
-        (moveEvent, rect) => (moveEvent.clientX - rect.left)), (/**
-         * @param {?} rect
-         * @return {?}
-         */
-        (rect) => (rect.width)));
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(speedMouseTouchDown$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                if (!this.controlMouseDown) {
-                    this.controlMouseDown = true;
-                    this.controlHoveredChange.unsubscribe();
-                }
-                this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(speedTouchDrag$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e);
-                this.changeDetectorRef.detectChanges();
-            })));
-        }));
-        /** @type {?} */
-        const onKeyDown$ = (/**
-         * @param {?} code
-         * @return {?}
-         */
-        code => fromEvent(document, 'keydown').pipe(filter((/**
-         * @param {?} e
-         * @return {?}
-         */
-        (e) => this.focus && e.code === code)), tap((/**
-         * @param {?} e
-         * @return {?}
-         */
-        e => {
-            e.preventDefault();
-            e.stopPropagation();
-        }))));
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(onKeyDown$('Space').subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.togglePlay();
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(onKeyDown$('ArrowRight').subscribe((/**
-             * @return {?}
-             */
-            () => {
-                this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration;
-                this.video.nativeElement.currentTime = this.mCurrentTime;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe((/**
-             * @return {?}
-             */
-            () => {
-                this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0;
-                this.video.nativeElement.currentTime = this.mCurrentTime;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(onKeyDown$('ArrowUp').subscribe((/**
-             * @return {?}
-             */
-            () => {
-                this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1;
-                this.video.nativeElement.volume = this.mVolume;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.subscriptions.push(onKeyDown$('ArrowDown').subscribe((/**
-             * @return {?}
-             */
-            () => {
-                this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0;
-                this.video.nativeElement.volume = this.mVolume;
-                this.changeDetectorRef.detectChanges();
-            })));
-        }));
-        /** @type {?} */
-        const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
-            .pipe(switchMap((/**
-         * @return {?}
-         */
-        () => merge(of(true), timer(1000).pipe(mapTo(false))))), distinctUntilChanged());
-        this.zone.runOutsideAngular((/**
-         * @return {?}
-         */
-        () => {
-            this.subscriptions.push(showVolumeHint$.subscribe((/**
-             * @param {?} e
-             * @return {?}
-             */
-            e => {
-                this.showVolumeHint = e;
-                this.changeDetectorRef.detectChanges();
-            })));
-            this.setAllControlPanelsPosition();
-        }));
         this.subscriptions.push(fromEvent(this.element.nativeElement, 'contextmenu')
             .subscribe((/**
          * @param {?} e
@@ -1672,43 +1695,39 @@ class UshioComponent {
             this.element.nativeElement.addEventListener('click', this.onComponentClicked, true);
             document.addEventListener('click', this.onDocumentClicked, true);
         }));
-        /** @type {?} */
-        const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat());
         this.zone.runOutsideAngular((/**
          * @return {?}
          */
         () => {
-            this.subscriptions.push(animationFrame$.subscribe((/**
+            this.showControlChange$.subscribe((/**
+             * @param {?} showControl
              * @return {?}
              */
-            () => {
-                if (!this.fpsStart)
-                    this.fpsStart = +new Date();
-                this.fpsIndex++;
-                /** @type {?} */
-                const fpsCurrent = +new Date();
-                if (fpsCurrent - this.fpsStart > 1000) {
-                    this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2);
-                    this.fpsStart = +new Date();
-                    this.fpsIndex = 0;
-                    this.changeDetectorRef.detectChanges();
-                }
-            })));
+            showControl => {
+                if (showControl)
+                    this.onControlShown();
+                else
+                    this.onControlDismiss();
+                this.showControlChange.emit(showControl);
+            }));
         }));
     }
     /**
      * @return {?}
      */
     ngOnDestroy() {
-        if (this.timeUpdate)
+        this.onUnfocused();
+        this.onControlDismiss();
+        if (this.timeUpdate) {
             this.timeUpdate.unsubscribe();
-        if (this.controlHoveredChange)
-            this.controlHoveredChange.unsubscribe();
+            this.timeUpdate = null;
+        }
         this.subscriptions.forEach((/**
          * @param {?} sub
          * @return {?}
          */
         sub => sub.unsubscribe()));
+        this.subscriptions = [];
         this.langContextMenuOption.nativeElement.removeEventListener('click', this.showLangMenu, true);
         this.element.nativeElement.removeEventListener('click', this.onComponentClicked, true);
         document.removeEventListener('click', this.onDocumentClicked, true);
@@ -2027,6 +2046,9 @@ class UshioComponent {
      */
     onComponentClicked() {
         this.focus = true;
+        if (this.keySubscriptions.length === 0) {
+            this.onFocused();
+        }
     }
     /**
      * @return {?}
@@ -2050,6 +2072,34 @@ class UshioComponent {
      */
     toggleShowStatisticInfoPanel() {
         this.showStatisticInfoPanel = !this.showStatisticInfoPanel;
+        if (this.showStatisticInfoPanel) {
+            this.zone.runOutsideAngular((/**
+             * @return {?}
+             */
+            () => {
+                /** @type {?} */
+                const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat());
+                this.animationFrame = animationFrame$.subscribe((/**
+                 * @return {?}
+                 */
+                () => {
+                    if (!this.fpsStart)
+                        this.fpsStart = +new Date();
+                    this.fpsIndex++;
+                    /** @type {?} */
+                    const fpsCurrent = +new Date();
+                    if (fpsCurrent - this.fpsStart > 1000) {
+                        this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2);
+                        this.fpsStart = +new Date();
+                        this.fpsIndex = 0;
+                        this.changeDetectorRef.detectChanges();
+                    }
+                }));
+            }));
+        }
+        else {
+            this.animationFrame.unsubscribe();
+        }
     }
 }
 UshioComponent.decorators = [
@@ -2266,6 +2316,16 @@ if (false) {
      * @private
      */
     UshioComponent.prototype.mobileShowControlStateChange$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.showControlProbablyChanged$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.showControlChange$;
     /** @type {?} */
     UshioComponent.prototype.interactMode;
     /**
@@ -2414,7 +2474,52 @@ if (false) {
      * @type {?}
      * @private
      */
+    UshioComponent.prototype.animationFrame;
+    /**
+     * @type {?}
+     * @private
+     */
     UshioComponent.prototype.subscriptions;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.mouseSubscriptions;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.keySubscriptions;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.mouseMove$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.mouseUp$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.touchMove$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.touchStart$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.touchEnd$;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.mouseTouchUp$;
     /** @type {?} */
     UshioComponent.prototype.t;
     /**

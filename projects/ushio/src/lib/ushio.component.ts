@@ -205,6 +205,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private subtitlesSlotChange$ = this.subtitlesSlotUpdate$.asObservable().pipe(distinctUntilChanged())
   private sourcesSlotChange$ = this.sourcesSlotUpdate$.asObservable().pipe(distinctUntilChanged())
   private mobileShowControlStateChange$ = new Subject<{ showControl: boolean, delaySwitch: boolean }>()
+  private showControlProbablyChanged$ = new Subject()
+  private showControlChange$ = this.showControlProbablyChanged$.asObservable().pipe(
+    map(() => this.showControl),
+    distinctUntilChanged()
+  )
 
   interactMode: 'desktop' | 'mobile' = 'desktop'
   private focus = false
@@ -224,7 +229,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return this.thumbMouseDown || this.controlMouseDown
   }
   get showControl () {
-    return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown)
+    return !!(this.mShowControl || this.mouseDown)
   }
   get noCursor () {
     return !this.showControl && this.mNoCursor
@@ -412,7 +417,19 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   private timeUpdate: Subscription
   private controlHoveredChange: Subscription
+  private animationFrame: Subscription
   private subscriptions: Subscription[] = []
+  private mouseSubscriptions: Subscription[] = []
+  private keySubscriptions: Subscription[] = []
+  private mouseMove$ = fromEvent(document, 'mousemove')
+  private mouseUp$ = fromEvent(document, 'mouseup')
+  private touchMove$ = fromEvent(document, 'touchmove')
+  private touchStart$ = fromEvent(document, 'touchstart')
+  private touchEnd$ = merge(
+    fromEvent(document, 'touchend'),
+    fromEvent(document, 'touchcancel')
+  )
+  private mouseTouchUp$ = merge(this.mouseUp$, this.touchEnd$)
 
   t = this.service.i18n.t
 
@@ -500,19 +517,71 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     })
   }
 
-  ngAfterViewInit () {
-    const mouseMove$ = fromEvent(document, 'mousemove')
-    const mouseUp$ = fromEvent(document, 'mouseup')
-    const touchMove$ = fromEvent(document, 'touchmove')
-    const touchStart$ = fromEvent(document, 'touchstart')
-    const touchEnd$ = merge(
-      fromEvent(document, 'touchend'),
-      fromEvent(document, 'touchcancel')
+  onUnfocused () {
+    this.keySubscriptions.forEach(sub => sub.unsubscribe())
+    this.keySubscriptions = []
+  }
+
+  onFocused () {
+    const onKeyDown$ = code => fromEvent(document, 'keydown').pipe(
+      filter((e: KeyboardEvent) => this.focus && e.code === code),
+      tap(e => {
+        e.preventDefault()
+        e.stopPropagation()
+      })
     )
-    const mouseTouchUp$ = merge(mouseUp$, touchEnd$)
-    touchStart$.subscribe(() => {
-      this.interactMode = 'mobile'
+    this.zone.runOutsideAngular(() => {
+      this.keySubscriptions.push(onKeyDown$('Space').subscribe(e => {
+        this.togglePlay()
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.keySubscriptions.push(onKeyDown$('ArrowRight').subscribe(() => {
+        this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration
+        this.video.nativeElement.currentTime = this.mCurrentTime
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.keySubscriptions.push(onKeyDown$('ArrowLeft').subscribe(() => {
+        this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0
+        this.video.nativeElement.currentTime = this.mCurrentTime
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.keySubscriptions.push(onKeyDown$('ArrowUp').subscribe(() => {
+        this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1
+        this.video.nativeElement.volume = this.mVolume
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.keySubscriptions.push(onKeyDown$('ArrowDown').subscribe(() => {
+        this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0
+        this.video.nativeElement.volume = this.mVolume
+        this.changeDetectorRef.detectChanges()
+      }))
     })
+    const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
+      .pipe(
+        switchMap(
+          () => merge(of(true), timer(1000).pipe(mapTo(false)))
+        ),
+        distinctUntilChanged()
+      )
+    this.zone.runOutsideAngular(() => {
+      this.keySubscriptions.push(showVolumeHint$.subscribe(e => {
+        this.showVolumeHint = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.setAllControlPanelsPosition()
+    })
+  }
+
+  onControlDismiss () {
+    this.mouseSubscriptions.forEach(sub => sub.unsubscribe())
+    this.mouseSubscriptions = []
+    if (this.controlHoveredChange) {
+      this.controlHoveredChange.unsubscribe()
+      this.controlHoveredChange = null
+    }
+  }
+
+  onControlShown () {
     const ifMouseInArea = (e: MouseEvent, btnElement, popUpElement) => {
       const rect1 = popUpElement.getBoundingClientRect()
       const rect2 = btnElement.getBoundingClientRect()
@@ -525,7 +594,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         e.clientY < rect2.bottom)
     }
     const onControlBtnHoverStateChanged$ = (btns) => {
-      return mouseMove$.pipe(
+      return this.mouseMove$.pipe(
         switchMap((e: MouseEvent) => {
           for (const btn of btns) {
             if (ifMouseInArea(e, btn.btnElement, btn.popUpElement)) {
@@ -539,7 +608,222 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         distinctUntilChanged()
       )
     }
-    const desktopShowControlStateChange$ = mouseMove$.pipe(
+    const mouseHoverProgressState$ = this.mouseMove$.pipe(
+      filter(() => (this.interactMode === 'desktop')),
+      map((e: MouseEvent) => {
+        const rect = this.slider.nativeElement.getBoundingClientRect()
+        const yCenter = (rect.top + rect.bottom) / 2
+        if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
+          const left = e.clientX - rect.left
+          const containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10
+          const timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10
+          return { left, containerLeft, timeLeft, width: rect.width }
+        } else {
+          return false
+        }
+      }),
+      distinctUntilChanged((a, b) => {
+        if (typeof a !== typeof b) {
+          return false
+        } else if (typeof a === 'object' && typeof b === 'object') {
+          return a.left === b.left && a.containerLeft === b.containerLeft
+            && a.timeLeft === b.timeLeft && a.width === b.width
+        } else {
+          return a === b
+        }
+      })
+    )
+    this.zone.runOutsideAngular(() => {
+      this.mouseSubscriptions.push(mouseHoverProgressState$.subscribe(state => {
+        if (typeof state === 'boolean') {
+          this.showProgressDetail = state
+        } else {
+          this.showProgressDetail = true
+          this.mProgressDetailPosition = `left: ${state.left}px`
+          this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`
+          this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`
+          this.mProgressDetailPositionRate = state.left / state.width
+        }
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
+    const mapToRate = (element, progress, total) => map(
+      (moveEvent: MouseEvent | TouchEvent) => {
+        const eventCoordinate = moveEvent instanceof TouchEvent
+          ? moveEvent.changedTouches[0]
+          : moveEvent
+        const rect = element.getBoundingClientRect()
+        let p = progress(eventCoordinate, rect)
+        const t = total(rect)
+        if (p < 0) p = 0
+        else if (p > t) p = t
+        return p / t
+      }
+    )
+    const onMouseTouchDown$ = (element, progress, total) => {
+      return merge(
+        fromEvent(element, 'mousedown'),
+        fromEvent(element, 'touchstart')
+      ).pipe(
+        mapToRate(element, progress, total)
+      )
+    }
+    const onMouseTouchDrag$ = (element, progress, total) => {
+      return merge(
+        fromEvent(element, 'mousedown').pipe(
+          mapToRate(element, progress, total),
+          concatMap(() => {
+            return this.mouseMove$.pipe(
+              takeUntil(this.mouseUp$),
+              mapToRate(element, progress, total)
+            )
+          })
+        ),
+        fromEvent(element, 'touchstart').pipe(
+          mapToRate(element, progress, total),
+          concatMap(() => {
+            return this.touchMove$.pipe(
+              takeUntil(this.touchEnd$),
+              mapToRate(element, progress, total)
+            )
+          })
+        )
+      )
+    }
+    const thumbMouseTouchDown$ = onMouseTouchDown$(
+      this.slider.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width)
+    )
+    const thumbTouchDrag$ = onMouseTouchDrag$(
+      this.slider.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width)
+    )
+    this.zone.runOutsideAngular(() => {
+      this.mouseSubscriptions.push(thumbMouseTouchDown$.subscribe(e => {
+        this.thumbMouseDown = true
+        this.timeUpdate.unsubscribe()
+        this.mCurrentTime = e * this.duration
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.mouseSubscriptions.push(thumbTouchDrag$.subscribe(e => {
+        this.mCurrentTime = e * this.duration
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.mouseSubscriptions.push(this.mouseTouchUp$.subscribe(() => {
+        if (this.thumbMouseDown) {
+          this.video.nativeElement.currentTime = this.mCurrentTime
+          this.subscribeTimeUpdate()
+          this.thumbMouseDown = false
+          this.showControlProbablyChanged$.next(0)
+          this.changeDetectorRef.detectChanges()
+        }
+      }))
+    })
+    const controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
+      btnElement: this.volumeBtn.nativeElement,
+      popUpElement: this.volumePanel.nativeElement,
+      btnName: 'volume'
+    }, {
+      btnElement: this.settingsBtn.nativeElement,
+      popUpElement: this.settingsPanel.nativeElement,
+      btnName: 'settings'
+    }, {
+      btnElement: this.sourceBtn.nativeElement,
+      popUpElement: this.sourcePanel.nativeElement,
+      btnName: 'source'
+    }, {
+      btnElement: this.subtitlesBtn.nativeElement,
+      popUpElement: this.subtitlesPanel.nativeElement,
+      btnName: 'subtitles'
+    }])
+    const subscribeControlHoveredChange = () => {
+      this.zone.runOutsideAngular(() => {
+        this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
+          this.controlHoveredClass = e
+          this.setAllControlPanelsPosition()
+          this.changeDetectorRef.detectChanges()
+        })
+      })
+    }
+    subscribeControlHoveredChange()
+    const volumeMouseTouchDown$ = onMouseTouchDown$(
+      this.volumeBar.nativeElement,
+      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
+      (rect) => (rect.height)
+    )
+    const volumeTouchDrag$ = onMouseTouchDrag$(
+      this.volumeBar.nativeElement,
+      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
+      (rect) => (rect.height)
+    )
+    this.zone.runOutsideAngular(() => {
+      this.mouseSubscriptions.push(volumeMouseTouchDown$.subscribe(e => {
+        if (!this.controlMouseDown) {
+          this.controlMouseDown = true
+          this.controlHoveredChange.unsubscribe()
+        }
+        this.video.nativeElement.muted = false
+        this.video.nativeElement.volume = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.mouseSubscriptions.push(volumeTouchDrag$.subscribe(e => {
+        this.video.nativeElement.volume = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.mouseSubscriptions.push(this.mouseTouchUp$.subscribe(() => {
+        if (this.controlMouseDown) {
+          subscribeControlHoveredChange()
+          this.controlMouseDown = false
+          this.showControlProbablyChanged$.next(0)
+          this.changeDetectorRef.detectChanges()
+        }
+      }))
+    })
+    const speedMouseTouchDown$ = onMouseTouchDown$(
+      this.speedBar.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width)
+    )
+    const speedTouchDrag$ = onMouseTouchDrag$(
+      this.speedBar.nativeElement,
+      (moveEvent, rect) => (moveEvent.clientX - rect.left),
+      (rect) => (rect.width)
+    )
+    this.zone.runOutsideAngular(() => {
+      this.mouseSubscriptions.push(speedMouseTouchDown$.subscribe(e => {
+        if (!this.controlMouseDown) {
+          this.controlMouseDown = true
+          this.controlHoveredChange.unsubscribe()
+        }
+        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.mouseSubscriptions.push(speedTouchDrag$.subscribe(e => {
+        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
+  }
+
+  private subscribeTimeUpdate () {
+    this.zone.runOutsideAngular(() => {
+      this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
+        .subscribe(() => {
+          this.mCurrentTime = this.video.nativeElement.currentTime
+          this.currentTimeChange.emit(this.mCurrentTime)
+          this.updateFlyingSubtitles(this.mCurrentTime)
+          this.changeDetectorRef.detectChanges()
+        })
+    })
+  }
+
+  ngAfterViewInit () {
+    this.touchStart$.subscribe(() => {
+      this.interactMode = 'mobile'
+    })
+    const desktopShowControlStateChange$ = this.mouseMove$.pipe(
       filter(() => (this.interactMode === 'desktop')),
       map((e: MouseEvent) => {
         const rect = this.video.nativeElement.getBoundingClientRect()
@@ -584,46 +868,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     this.zone.runOutsideAngular(() => {
       this.subscriptions.push(showControlStateChange$.subscribe(state => {
         this.mShowControl = state.showControl
+        this.showControlProbablyChanged$.next(0)
         this.mNoCursor = state.noCursor
-        this.changeDetectorRef.detectChanges()
-      }))
-    })
-    const mouseHoverProgressState$ = mouseMove$.pipe(
-      filter(() => (this.interactMode === 'desktop')),
-      map((e: MouseEvent) => {
-        const rect = this.slider.nativeElement.getBoundingClientRect()
-        const yCenter = (rect.top + rect.bottom) / 2
-        if (Math.abs(e.clientY - yCenter) < 8 && e.clientX > rect.left && e.clientX < rect.right) {
-          const left = e.clientX - rect.left
-          const containerLeft = left < 80 ? 90 - left : left > rect.width - 80 ? rect.width - left - 70 : 10
-          const timeLeft = left < 20 ? 30 - left : left > rect.width - 20 ? rect.width - left - 10 : 10
-          return { left, containerLeft, timeLeft, width: rect.width }
-        } else {
-          return false
-        }
-      }),
-      distinctUntilChanged((a, b) => {
-        if (typeof a !== typeof b) {
-          return false
-        } else if (typeof a === 'object' && typeof b === 'object') {
-          return a.left === b.left && a.containerLeft === b.containerLeft
-            && a.timeLeft === b.timeLeft && a.width === b.width
-        } else {
-          return a === b
-        }
-      })
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(mouseHoverProgressState$.subscribe(state => {
-        if (typeof state === 'boolean') {
-          this.showProgressDetail = state
-        } else {
-          this.showProgressDetail = true
-          this.mProgressDetailPosition = `left: ${state.left}px`
-          this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`
-          this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`
-          this.mProgressDetailPositionRate = state.left / state.width
-        }
         this.changeDetectorRef.detectChanges()
       }))
     })
@@ -639,18 +885,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.mPaused = false
         this.pausedChange.emit(false)
       }))
-    const subscribeTimeUpdate = () => {
-      this.zone.runOutsideAngular(() => {
-        this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
-          .subscribe(() => {
-            this.mCurrentTime = this.video.nativeElement.currentTime
-            this.currentTimeChange.emit(this.mCurrentTime)
-            this.updateFlyingSubtitles(this.mCurrentTime)
-            this.changeDetectorRef.detectChanges()
-          })
-      })
-    }
-    subscribeTimeUpdate()
+    this.subscribeTimeUpdate()
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting')
       .subscribe(() => {
         this.waiting = true
@@ -694,218 +929,6 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.mPlaybackRate = this.video.nativeElement.playbackRate
         this.playbackRateChange.emit(this.mPlaybackRate)
       }))
-    const mapToRate = (element, progress, total) => map(
-      (moveEvent: MouseEvent | TouchEvent) => {
-        const eventCoordinate = moveEvent instanceof TouchEvent
-          ? moveEvent.changedTouches[0]
-          : moveEvent
-        const rect = element.getBoundingClientRect()
-        let p = progress(eventCoordinate, rect)
-        const t = total(rect)
-        if (p < 0) p = 0
-        else if (p > t) p = t
-        return p / t
-      }
-    )
-    const onMouseTouchDown$ = (element, progress, total) => {
-      return merge(
-        fromEvent(element, 'mousedown'),
-        fromEvent(element, 'touchstart')
-      ).pipe(
-        mapToRate(element, progress, total)
-      )
-    }
-    const onMouseTouchDrag$ = (element, progress, total) => {
-      return merge(
-        fromEvent(element, 'mousedown').pipe(
-          mapToRate(element, progress, total),
-          concatMap(() => {
-            return mouseMove$.pipe(
-              takeUntil(mouseUp$),
-              mapToRate(element, progress, total)
-            )
-          })
-        ),
-        fromEvent(element, 'touchstart').pipe(
-          mapToRate(element, progress, total),
-          concatMap(() => {
-            return touchMove$.pipe(
-              takeUntil(touchEnd$),
-              mapToRate(element, progress, total)
-            )
-          })
-        )
-      )
-    }
-    const thumbMouseTouchDown$ = onMouseTouchDown$(
-      this.slider.nativeElement,
-      (moveEvent, rect) => (moveEvent.clientX - rect.left),
-      (rect) => (rect.width)
-    )
-    const thumbTouchDrag$ = onMouseTouchDrag$(
-      this.slider.nativeElement,
-      (moveEvent, rect) => (moveEvent.clientX - rect.left),
-      (rect) => (rect.width)
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(thumbMouseTouchDown$.subscribe(e => {
-        this.thumbMouseDown = true
-        this.timeUpdate.unsubscribe()
-        this.mCurrentTime = e * this.duration
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(thumbTouchDrag$.subscribe(e => {
-        this.mCurrentTime = e * this.duration
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(mouseTouchUp$.subscribe(() => {
-        if (this.thumbMouseDown) {
-          this.video.nativeElement.currentTime = this.mCurrentTime
-          subscribeTimeUpdate()
-          this.thumbMouseDown = false
-          this.changeDetectorRef.detectChanges()
-        }
-      }))
-    })
-    const controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
-      btnElement: this.volumeBtn.nativeElement,
-      popUpElement: this.volumePanel.nativeElement,
-      btnName: 'volume'
-    }, {
-      btnElement: this.settingsBtn.nativeElement,
-      popUpElement: this.settingsPanel.nativeElement,
-      btnName: 'settings'
-    }, {
-      btnElement: this.sourceBtn.nativeElement,
-      popUpElement: this.sourcePanel.nativeElement,
-      btnName: 'source'
-    }, {
-      btnElement: this.subtitlesBtn.nativeElement,
-      popUpElement: this.subtitlesPanel.nativeElement,
-      btnName: 'subtitles'
-    }])
-    const subscribeControlHoveredChange = () => {
-      this.zone.runOutsideAngular(() => {
-        this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
-          this.controlHoveredClass = e
-          this.setAllControlPanelsPosition()
-          this.changeDetectorRef.detectChanges()
-        })
-      })
-    }
-    subscribeControlHoveredChange()
-    const hoverStateChange$ = merge(showControlStateChange$, controlHoverStateChange$).pipe(
-      map(() => this.showControl),
-      distinctUntilChanged()
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(hoverStateChange$.subscribe(e => {
-        this.showControlChange.emit(e)
-      }))
-    })
-    const volumeMouseTouchDown$ = onMouseTouchDown$(
-      this.volumeBar.nativeElement,
-      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
-      (rect) => (rect.height)
-    )
-    const volumeTouchDrag$ = onMouseTouchDrag$(
-      this.volumeBar.nativeElement,
-      (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
-      (rect) => (rect.height)
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(volumeMouseTouchDown$.subscribe(e => {
-        if (!this.controlMouseDown) {
-          this.controlMouseDown = true
-          this.controlHoveredChange.unsubscribe()
-        }
-        this.video.nativeElement.muted = false
-        this.video.nativeElement.volume = e
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
-        this.video.nativeElement.volume = e
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(mouseTouchUp$.subscribe(() => {
-        if (this.controlMouseDown) {
-          subscribeControlHoveredChange()
-          this.controlMouseDown = false
-          this.changeDetectorRef.detectChanges()
-        }
-      }))
-    })
-    const speedMouseTouchDown$ = onMouseTouchDown$(
-      this.speedBar.nativeElement,
-      (moveEvent, rect) => (moveEvent.clientX - rect.left),
-      (rect) => (rect.width)
-    )
-    const speedTouchDrag$ = onMouseTouchDrag$(
-      this.speedBar.nativeElement,
-      (moveEvent, rect) => (moveEvent.clientX - rect.left),
-      (rect) => (rect.width)
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(speedMouseTouchDown$.subscribe(e => {
-        if (!this.controlMouseDown) {
-          this.controlMouseDown = true
-          this.controlHoveredChange.unsubscribe()
-        }
-        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(speedTouchDrag$.subscribe(e => {
-        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
-        this.changeDetectorRef.detectChanges()
-      }))
-    })
-    const onKeyDown$ = code => fromEvent(document, 'keydown').pipe(
-      filter((e: KeyboardEvent) => this.focus && e.code === code),
-      tap(e => {
-        e.preventDefault()
-        e.stopPropagation()
-      })
-    )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(onKeyDown$('Space').subscribe(e => {
-        this.togglePlay()
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(onKeyDown$('ArrowRight').subscribe(() => {
-        this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration
-        this.video.nativeElement.currentTime = this.mCurrentTime
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe(() => {
-        this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0
-        this.video.nativeElement.currentTime = this.mCurrentTime
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(onKeyDown$('ArrowUp').subscribe(() => {
-        this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1
-        this.video.nativeElement.volume = this.mVolume
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.subscriptions.push(onKeyDown$('ArrowDown').subscribe(() => {
-        this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0
-        this.video.nativeElement.volume = this.mVolume
-        this.changeDetectorRef.detectChanges()
-      }))
-    })
-    const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
-      .pipe(
-        switchMap(
-          () => merge(of(true), timer(1000).pipe(mapTo(false)))
-        ),
-        distinctUntilChanged()
-      )
-    this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(showVolumeHint$.subscribe(e => {
-        this.showVolumeHint = e
-        this.changeDetectorRef.detectChanges()
-      }))
-      this.setAllControlPanelsPosition()
-    })
     this.subscriptions.push(fromEvent(this.element.nativeElement, 'contextmenu')
       .subscribe((e: MouseEvent) => {
         e.preventDefault()
@@ -932,26 +955,24 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.element.nativeElement.addEventListener('click', this.onComponentClicked, true)
       document.addEventListener('click', this.onDocumentClicked, true)
     })
-    const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat())
     this.zone.runOutsideAngular(() => {
-      this.subscriptions.push(animationFrame$.subscribe(() => {
-        if (!this.fpsStart) this.fpsStart = +new Date()
-        this.fpsIndex++
-        const fpsCurrent = +new Date()
-        if (fpsCurrent - this.fpsStart > 1000) {
-          this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2)
-          this.fpsStart = +new Date()
-          this.fpsIndex = 0
-          this.changeDetectorRef.detectChanges()
-        }
-      }))
+      this.showControlChange$.subscribe(showControl => {
+        if (showControl) this.onControlShown()
+        else this.onControlDismiss()
+        this.showControlChange.emit(showControl)
+      })
     })
   }
 
   ngOnDestroy () {
-    if (this.timeUpdate) this.timeUpdate.unsubscribe()
-    if (this.controlHoveredChange) this.controlHoveredChange.unsubscribe()
+    this.onUnfocused()
+    this.onControlDismiss()
+    if (this.timeUpdate) {
+      this.timeUpdate.unsubscribe()
+      this.timeUpdate = null
+    }
     this.subscriptions.forEach(sub => sub.unsubscribe())
+    this.subscriptions = []
     this.langContextMenuOption.nativeElement.removeEventListener('click', this.showLangMenu, true)
     this.element.nativeElement.removeEventListener('click', this.onComponentClicked, true)
     document.removeEventListener('click', this.onDocumentClicked, true)
@@ -1164,6 +1185,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   onComponentClicked () {
     this.focus = true
+    if (this.keySubscriptions.length === 0) {
+      this.onFocused()
+    }
   }
 
   onDocumentClicked () {
@@ -1180,6 +1204,24 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   toggleShowStatisticInfoPanel () {
     this.showStatisticInfoPanel = !this.showStatisticInfoPanel
+    if (this.showStatisticInfoPanel) {
+      this.zone.runOutsideAngular(() => {
+        const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat())
+        this.animationFrame = animationFrame$.subscribe(() => {
+          if (!this.fpsStart) this.fpsStart = +new Date()
+          this.fpsIndex++
+          const fpsCurrent = +new Date()
+          if (fpsCurrent - this.fpsStart > 1000) {
+            this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2)
+            this.fpsStart = +new Date()
+            this.fpsIndex = 0
+            this.changeDetectorRef.detectChanges()
+          }
+        })
+      })
+    } else {
+      this.animationFrame.unsubscribe()
+    }
   }
 
 }

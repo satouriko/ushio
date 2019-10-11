@@ -99,6 +99,8 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     private subtitlesSlotChange$;
     private sourcesSlotChange$;
     private mobileShowControlStateChange$;
+    private showControlProbablyChanged$;
+    private showControlChange$;
     interactMode: 'desktop' | 'mobile';
     private focus;
     private mShowControl;
@@ -178,7 +180,16 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     readonly videoCurrentTime: any;
     private timeUpdate;
     private controlHoveredChange;
+    private animationFrame;
     private subscriptions;
+    private mouseSubscriptions;
+    private keySubscriptions;
+    private mouseMove$;
+    private mouseUp$;
+    private touchMove$;
+    private touchStart$;
+    private touchEnd$;
+    private mouseTouchUp$;
     t: (key: string) => string;
     static mapSpeedToProgress(speed: any): number;
     static mapProgressToSpeed(progress: any): number;
@@ -186,6 +197,11 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     constructor(element: ElementRef, zone: NgZone, changeDetectorRef: ChangeDetectorRef, sanitization: DomSanitizer, service: UshioService);
     ngOnInit(): void;
     ngAfterContentInit(): void;
+    onUnfocused(): void;
+    onFocused(): void;
+    onControlDismiss(): void;
+    onControlShown(): void;
+    private subscribeTimeUpdate;
     ngAfterViewInit(): void;
     ngOnDestroy(): void;
     private updateSources;
