@@ -1,6 +1,6 @@
 {
   "name": "ushio",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Get your favorite html video player in one simple html tag.",
   "peerDependencies": {
     "@angular/common": "^8.2.8",
@@ -15,5 +15,6 @@
   "bugs": {
     "url": "https://github.com/rikakomoe/ushio/issues"
   },
-  "homepage": "https://github.com/rikakomoe/ushio#readme"
+  "homepage": "https://github.com/rikakomoe/ushio#readme",
+  "keywords": ["video-player", "angular", "web-component"]
 }
