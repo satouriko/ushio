@@ -8,6 +8,8 @@ import { Component, OnInit } from '@angular/core'
 export class AppComponent implements OnInit {
   title = 'ushio-demo'
 
+  x = new Array(50)
+
   sub = `WEBVTT
 
 0

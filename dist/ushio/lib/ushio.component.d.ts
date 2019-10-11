@@ -1,4 +1,4 @@
-import { AfterContentInit, AfterViewInit, ElementRef, EventEmitter, OnDestroy, OnInit, QueryList } from '@angular/core';
+import { AfterContentInit, AfterViewInit, ChangeDetectorRef, ElementRef, EventEmitter, NgZone, OnDestroy, OnInit, QueryList } from '@angular/core';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 import { ISubtitle, UshioService } from './ushio.service';
 export declare class UshioSource {
@@ -34,6 +34,8 @@ interface Subtitles {
 }
 export declare class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, OnDestroy {
     private element;
+    private zone;
+    private changeDetectorRef;
     private sanitization;
     private service;
     private mInjectedStyles;
@@ -100,6 +102,7 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     interactMode: 'desktop' | 'mobile';
     private focus;
     private mShowControl;
+    private mNoCursor;
     private thumbMouseDown;
     private controlMouseDown;
     controlHoveredClass: string;
@@ -110,6 +113,7 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     readonly isFullScreen: boolean;
     readonly mouseDown: boolean;
     readonly showControl: boolean;
+    readonly noCursor: boolean;
     showControlChange: EventEmitter<boolean>;
     readonly thumbMouseDownClass: string;
     readonly pausedClass: string;
@@ -179,7 +183,7 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     static mapSpeedToProgress(speed: any): number;
     static mapProgressToSpeed(progress: any): number;
     static formatDuration(duration: number): string;
-    constructor(element: ElementRef, sanitization: DomSanitizer, service: UshioService);
+    constructor(element: ElementRef, zone: NgZone, changeDetectorRef: ChangeDetectorRef, sanitization: DomSanitizer, service: UshioService);
     ngOnInit(): void;
     ngAfterContentInit(): void;
     ngAfterViewInit(): void;

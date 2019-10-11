@@ -1,11 +1,11 @@
 import {
   AfterContentInit,
-  AfterViewInit,
+  AfterViewInit, ChangeDetectorRef,
   Component,
   ContentChildren,
   Directive,
   ElementRef, EventEmitter,
-  Input,
+  Input, NgZone,
   OnDestroy,
   OnInit, Output,
   QueryList,
@@ -209,6 +209,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   interactMode: 'desktop' | 'mobile' = 'desktop'
   private focus = false
   private mShowControl = false
+  private mNoCursor = false
   private thumbMouseDown = false
   private controlMouseDown = false
   controlHoveredClass = ''
@@ -224,6 +225,9 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
   get showControl () {
     return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown)
+  }
+  get noCursor () {
+    return !this.showControl && this.mNoCursor
   }
   @Output() showControlChange = new EventEmitter<boolean>()
   get thumbMouseDownClass (): string {
@@ -437,6 +441,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
 
   constructor (
     private element: ElementRef,
+    private zone: NgZone,
+    private changeDetectorRef: ChangeDetectorRef,
     private sanitization: DomSanitizer,
     private service: UshioService
   ) {
@@ -477,17 +483,21 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     const subtitlesAttr = ['value', 'type', 'src', 'name', 'class', 'default', 'srclang']
     const subtitlesChange$ = onContentChildrenOrSlotChanged$(
       subtitlesAttr, this.subtitlesContentChildren, this.subtitlesSlotChange$)
-    this.subscriptions.push(subtitlesChange$.subscribe(async (subtitles) => {
-      this.mSubtitles = subtitles
-      await this.updateSubtitles()
-    }))
     const sourcesAttr = ['src', 'type', 'name', 'shortname', 'default']
     const sourcesChange$ = onContentChildrenOrSlotChanged$(
       sourcesAttr, this.sourceContentChildren, this.sourcesSlotChange$)
-    this.subscriptions.push(sourcesChange$.subscribe((sources) => {
-      this.mSources = sources
-      this.updateSources()
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(subtitlesChange$.subscribe(async (subtitles) => {
+        this.mSubtitles = subtitles
+        await this.updateSubtitles()
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(sourcesChange$.subscribe((sources) => {
+        this.mSources = sources
+        this.updateSources()
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
   }
 
   ngAfterViewInit () {
@@ -549,20 +559,35 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       switchMap(e => {
         return e.showControl
           ? merge(
-            of(true),
+            of({
+              showControl: true,
+              noCursor: false
+            }),
             e.delaySwitch ? timer(
               this.interactMode === 'desktop' ? 750 : 5000
             ).pipe(
-              mapTo(false)
+              mapTo({
+                showControl: false,
+                noCursor: true
+              })
             ) : NEVER
           )
-          : of(false)
+          : of({
+            showControl: false,
+            noCursor: false
+          })
       }),
-      distinctUntilChanged()
+      distinctUntilChanged((a, b) => (
+        a.showControl === b.showControl && a.noCursor === b.noCursor
+      ))
     )
-    this.subscriptions.push(showControlStateChange$.subscribe(state => {
-      this.mShowControl = state
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(showControlStateChange$.subscribe(state => {
+        this.mShowControl = state.showControl
+        this.mNoCursor = state.noCursor
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
     const mouseHoverProgressState$ = mouseMove$.pipe(
       filter(() => (this.interactMode === 'desktop')),
       map((e: MouseEvent) => {
@@ -576,19 +601,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         } else {
           return false
         }
+      }),
+      distinctUntilChanged((a, b) => {
+        if (typeof a !== typeof b) {
+          return false
+        } else if (typeof a === 'object' && typeof b === 'object') {
+          return a.left === b.left && a.containerLeft === b.containerLeft
+            && a.timeLeft === b.timeLeft && a.width === b.width
+        } else {
+          return a === b
+        }
       })
     )
-    this.subscriptions.push(mouseHoverProgressState$.subscribe(state => {
-      if (!state) {
-        this.showProgressDetail = false
-      } else {
-        this.showProgressDetail = true
-        this.mProgressDetailPosition = `left: ${state.left}px`
-        this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`
-        this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`
-        this.mProgressDetailPositionRate = state.left / state.width
-      }
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(mouseHoverProgressState$.subscribe(state => {
+        if (typeof state === 'boolean') {
+          this.showProgressDetail = state
+        } else {
+          this.showProgressDetail = true
+          this.mProgressDetailPosition = `left: ${state.left}px`
+          this.mProgressDetailContainerPosition = `left: ${state.containerLeft}px`
+          this.mProgressDetailTimePosition = `left: ${state.timeLeft}px`
+          this.mProgressDetailPositionRate = state.left / state.width
+        }
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
     if (this.mPaused) this.video.nativeElement.pause()
     else this.video.nativeElement.play()
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'pause')
@@ -602,12 +640,15 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.pausedChange.emit(false)
       }))
     const subscribeTimeUpdate = () => {
-      this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
-        .subscribe(() => {
-          this.mCurrentTime = this.video.nativeElement.currentTime
-          this.currentTimeChange.emit(this.mCurrentTime)
-          this.updateFlyingSubtitles(this.mCurrentTime)
-        })
+      this.zone.runOutsideAngular(() => {
+        this.timeUpdate = fromEvent(this.video.nativeElement, 'timeupdate')
+          .subscribe(() => {
+            this.mCurrentTime = this.video.nativeElement.currentTime
+            this.currentTimeChange.emit(this.mCurrentTime)
+            this.updateFlyingSubtitles(this.mCurrentTime)
+            this.changeDetectorRef.detectChanges()
+          })
+      })
     }
     subscribeTimeUpdate()
     this.subscriptions.push(fromEvent(this.video.nativeElement, 'waiting')
@@ -706,21 +747,26 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     )
-    this.subscriptions.push(thumbMouseTouchDown$.subscribe(e => {
-      this.thumbMouseDown = true
-      this.timeUpdate.unsubscribe()
-      this.mCurrentTime = e * this.duration
-    }))
-    this.subscriptions.push(thumbTouchDrag$.subscribe(e => {
-      this.mCurrentTime = e * this.duration
-    }))
-    this.subscriptions.push(mouseTouchUp$.subscribe(() => {
-      if (this.thumbMouseDown) {
-        this.video.nativeElement.currentTime = this.mCurrentTime
-        subscribeTimeUpdate()
-        this.thumbMouseDown = false
-      }
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(thumbMouseTouchDown$.subscribe(e => {
+        this.thumbMouseDown = true
+        this.timeUpdate.unsubscribe()
+        this.mCurrentTime = e * this.duration
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(thumbTouchDrag$.subscribe(e => {
+        this.mCurrentTime = e * this.duration
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(mouseTouchUp$.subscribe(() => {
+        if (this.thumbMouseDown) {
+          this.video.nativeElement.currentTime = this.mCurrentTime
+          subscribeTimeUpdate()
+          this.thumbMouseDown = false
+          this.changeDetectorRef.detectChanges()
+        }
+      }))
+    })
     const controlHoverStateChange$ = onControlBtnHoverStateChanged$([{
       btnElement: this.volumeBtn.nativeElement,
       popUpElement: this.volumePanel.nativeElement,
@@ -739,9 +785,12 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       btnName: 'subtitles'
     }])
     const subscribeControlHoveredChange = () => {
-      this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
-        this.controlHoveredClass = e
-        this.setAllControlPanelsPosition()
+      this.zone.runOutsideAngular(() => {
+        this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
+          this.controlHoveredClass = e
+          this.setAllControlPanelsPosition()
+          this.changeDetectorRef.detectChanges()
+        })
       })
     }
     subscribeControlHoveredChange()
@@ -749,9 +798,11 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       map(() => this.showControl),
       distinctUntilChanged()
     )
-    this.subscriptions.push(hoverStateChange$.subscribe(e => {
-      this.showControlChange.emit(e)
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(hoverStateChange$.subscribe(e => {
+        this.showControlChange.emit(e)
+      }))
+    })
     const volumeMouseTouchDown$ = onMouseTouchDown$(
       this.volumeBar.nativeElement,
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
@@ -762,23 +813,28 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       (moveEvent, rect) => (rect.bottom - moveEvent.clientY),
       (rect) => (rect.height)
     )
-    this.subscriptions.push(volumeMouseTouchDown$.subscribe(e => {
-      if (!this.controlMouseDown) {
-        this.controlMouseDown = true
-        this.controlHoveredChange.unsubscribe()
-      }
-      this.video.nativeElement.muted = false
-      this.video.nativeElement.volume = e
-    }))
-    this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
-      this.video.nativeElement.volume = e
-    }))
-    this.subscriptions.push(mouseTouchUp$.subscribe(() => {
-      if (this.controlMouseDown) {
-        subscribeControlHoveredChange()
-        this.controlMouseDown = false
-      }
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(volumeMouseTouchDown$.subscribe(e => {
+        if (!this.controlMouseDown) {
+          this.controlMouseDown = true
+          this.controlHoveredChange.unsubscribe()
+        }
+        this.video.nativeElement.muted = false
+        this.video.nativeElement.volume = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(volumeTouchDrag$.subscribe(e => {
+        this.video.nativeElement.volume = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(mouseTouchUp$.subscribe(() => {
+        if (this.controlMouseDown) {
+          subscribeControlHoveredChange()
+          this.controlMouseDown = false
+          this.changeDetectorRef.detectChanges()
+        }
+      }))
+    })
     const speedMouseTouchDown$ = onMouseTouchDown$(
       this.speedBar.nativeElement,
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
@@ -789,16 +845,20 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       (moveEvent, rect) => (moveEvent.clientX - rect.left),
       (rect) => (rect.width)
     )
-    this.subscriptions.push(speedMouseTouchDown$.subscribe(e => {
-      if (!this.controlMouseDown) {
-        this.controlMouseDown = true
-        this.controlHoveredChange.unsubscribe()
-      }
-      this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
-    }))
-    this.subscriptions.push(speedTouchDrag$.subscribe(e => {
-      this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(speedMouseTouchDown$.subscribe(e => {
+        if (!this.controlMouseDown) {
+          this.controlMouseDown = true
+          this.controlHoveredChange.unsubscribe()
+        }
+        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(speedTouchDrag$.subscribe(e => {
+        this.video.nativeElement.playbackRate = UshioComponent.mapProgressToSpeed(e)
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
     const onKeyDown$ = code => fromEvent(document, 'keydown').pipe(
       filter((e: KeyboardEvent) => this.focus && e.code === code),
       tap(e => {
@@ -806,34 +866,46 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         e.stopPropagation()
       })
     )
-    this.subscriptions.push(onKeyDown$('Space').subscribe(e => {
-      this.togglePlay()
-    }))
-    this.subscriptions.push(onKeyDown$('ArrowRight').subscribe(() => {
-      this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration
-      this.video.nativeElement.currentTime = this.mCurrentTime
-    }))
-    this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe(() => {
-      this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0
-      this.video.nativeElement.currentTime = this.mCurrentTime
-    }))
-    this.subscriptions.push(onKeyDown$('ArrowUp').subscribe(() => {
-      this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1
-      this.video.nativeElement.volume = this.mVolume
-    }))
-    this.subscriptions.push(onKeyDown$('ArrowDown').subscribe(() => {
-      this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0
-      this.video.nativeElement.volume = this.mVolume
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(onKeyDown$('Space').subscribe(e => {
+        this.togglePlay()
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(onKeyDown$('ArrowRight').subscribe(() => {
+        this.mCurrentTime = this.mCurrentTime + 5 < this.duration ? this.mCurrentTime + 5 : this.duration
+        this.video.nativeElement.currentTime = this.mCurrentTime
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(onKeyDown$('ArrowLeft').subscribe(() => {
+        this.mCurrentTime = this.mCurrentTime - 5 > 0 ? this.mCurrentTime - 5 : 0
+        this.video.nativeElement.currentTime = this.mCurrentTime
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(onKeyDown$('ArrowUp').subscribe(() => {
+        this.mVolume = this.mVolume + 0.1 < 0.999996 ? this.mVolume + 0.1 : 1
+        this.video.nativeElement.volume = this.mVolume
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.subscriptions.push(onKeyDown$('ArrowDown').subscribe(() => {
+        this.mVolume = this.mVolume - 0.1 > 0.000004 ? this.mVolume - 0.1 : 0
+        this.video.nativeElement.volume = this.mVolume
+        this.changeDetectorRef.detectChanges()
+      }))
+    })
     const showVolumeHint$ = merge(onKeyDown$('ArrowUp'), onKeyDown$('ArrowDown'))
-    const dismissVolumeHint$ = showVolumeHint$.pipe(switchMap(() => timer(1000)))
-    this.subscriptions.push(showVolumeHint$.subscribe(() => {
-      this.showVolumeHint = true
-    }))
-    this.subscriptions.push(dismissVolumeHint$.subscribe(() => {
-      this.showVolumeHint = false
-    }))
-    this.setAllControlPanelsPosition()
+      .pipe(
+        switchMap(
+          () => merge(of(true), timer(1000).pipe(mapTo(false)))
+        ),
+        distinctUntilChanged()
+      )
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(showVolumeHint$.subscribe(e => {
+        this.showVolumeHint = e
+        this.changeDetectorRef.detectChanges()
+      }))
+      this.setAllControlPanelsPosition()
+    })
     this.subscriptions.push(fromEvent(this.element.nativeElement, 'contextmenu')
       .subscribe((e: MouseEvent) => {
         e.preventDefault()
@@ -855,20 +927,25 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         this.contextMenuState = 'root'
         this.showContextMenu = true
       }))
-    this.langContextMenuOption.nativeElement.addEventListener('click', this.showLangMenu, true)
-    this.element.nativeElement.addEventListener('click', this.onComponentClicked, true)
-    document.addEventListener('click', this.onDocumentClicked, true)
+    this.zone.runOutsideAngular(() => {
+      this.langContextMenuOption.nativeElement.addEventListener('click', this.showLangMenu, true)
+      this.element.nativeElement.addEventListener('click', this.onComponentClicked, true)
+      document.addEventListener('click', this.onDocumentClicked, true)
+    })
     const animationFrame$ = of(null, animationFrameScheduler).pipe(repeat())
-    this.subscriptions.push(animationFrame$.subscribe(() => {
-      if (!this.fpsStart) this.fpsStart = +new Date()
-      this.fpsIndex++
-      const fpsCurrent = +new Date()
-      if (fpsCurrent - this.fpsStart > 1000) {
-        this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2)
-        this.fpsStart = +new Date()
-        this.fpsIndex = 0
-      }
-    }))
+    this.zone.runOutsideAngular(() => {
+      this.subscriptions.push(animationFrame$.subscribe(() => {
+        if (!this.fpsStart) this.fpsStart = +new Date()
+        this.fpsIndex++
+        const fpsCurrent = +new Date()
+        if (fpsCurrent - this.fpsStart > 1000) {
+          this.fps = ((this.fpsIndex / (fpsCurrent - this.fpsStart)) * 1000).toFixed(2)
+          this.fpsStart = +new Date()
+          this.fpsIndex = 0
+          this.changeDetectorRef.detectChanges()
+        }
+      }))
+    })
   }
 
   ngOnDestroy () {
@@ -995,6 +1072,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
         panel: this.fullScreenPanel,
         name: 'fullscreen'
       }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name))
+      this.changeDetectorRef.detectChanges()
     }, 0)
   }
 
@@ -1081,16 +1159,19 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   showLangMenu () {
     this.contextMenuState = 'lang'
     this.showContextMenu = true
+    this.changeDetectorRef.detectChanges()
   }
 
   onComponentClicked () {
     this.focus = true
-    this.showContextMenu = false
   }
 
   onDocumentClicked () {
     this.focus = false
-    this.showContextMenu = false
+    if (this.showContextMenu) {
+      this.showContextMenu = false
+      this.changeDetectorRef.detectChanges()
+    }
   }
 
   setLanguage (code) {
