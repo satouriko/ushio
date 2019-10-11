@@ -229,7 +229,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     return this.thumbMouseDown || this.controlMouseDown
   }
   get showControl () {
-    return !!(this.mShowControl || this.mouseDown)
+    return !!(this.mShowControl || this.controlHoveredClass || this.mouseDown)
   }
   get noCursor () {
     return !this.showControl && this.mNoCursor
@@ -421,6 +421,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   private subscriptions: Subscription[] = []
   private mouseSubscriptions: Subscription[] = []
   private keySubscriptions: Subscription[] = []
+  private setAllControlPanelsPositionTimeout: number
   private mouseMove$ = fromEvent(document, 'mousemove')
   private mouseUp$ = fromEvent(document, 'mouseup')
   private touchMove$ = fromEvent(document, 'touchmove')
@@ -742,6 +743,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
       this.zone.runOutsideAngular(() => {
         this.controlHoveredChange = controlHoverStateChange$.subscribe(e => {
           this.controlHoveredClass = e
+          this.showControlProbablyChanged$.next(0)
           this.setAllControlPanelsPosition()
           this.changeDetectorRef.detectChanges()
         })
@@ -965,6 +967,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   ngOnDestroy () {
+    clearTimeout(this.setAllControlPanelsPositionTimeout)
     this.onUnfocused()
     this.onControlDismiss()
     if (this.timeUpdate) {
@@ -1071,30 +1074,32 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   private setAllControlPanelsPosition () {
-    setTimeout(() => {
-      [{
-        btn: this.settingsBtn,
-        panel: this.settingsPanel,
-        name: 'settings'
-      }, {
-        btn: this.sourceBtn,
-        panel: this.sourcePanel,
-        name: 'source'
-      }, {
-        btn: this.subtitlesBtn,
-        panel: this.subtitlesPanel,
-        name: 'subtitles'
-      }, {
-        btn: this.loopBtn,
-        panel: this.loopPanel,
-        name: 'loop'
-      }, {
-        btn: this.fullScreenBtn,
-        panel: this.fullScreenPanel,
-        name: 'fullscreen'
-      }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name))
-      this.changeDetectorRef.detectChanges()
-    }, 0)
+    this.zone.runOutsideAngular(() => {
+      this.setAllControlPanelsPositionTimeout = setTimeout(() => {
+        [{
+          btn: this.settingsBtn,
+          panel: this.settingsPanel,
+          name: 'settings'
+        }, {
+          btn: this.sourceBtn,
+          panel: this.sourcePanel,
+          name: 'source'
+        }, {
+          btn: this.subtitlesBtn,
+          panel: this.subtitlesPanel,
+          name: 'subtitles'
+        }, {
+          btn: this.loopBtn,
+          panel: this.loopPanel,
+          name: 'loop'
+        }, {
+          btn: this.fullScreenBtn,
+          panel: this.fullScreenPanel,
+          name: 'fullscreen'
+        }].forEach(item => this.setPanelPosition(item.btn, item.panel, item.name))
+        this.changeDetectorRef.detectChanges()
+      }, 0)
+    })
   }
 
   private setPanelPosition (btn, panel, name) {
@@ -1144,6 +1149,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   onCheckSubtitles (i) {
     this.subtitles[i].enabled = !this.subtitles[i].enabled
     this.updateFlyingSubtitles()
+    this.changeDetectorRef.detectChanges()
   }
 
   togglePlay () {

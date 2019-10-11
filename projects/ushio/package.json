@@ -1,6 +1,6 @@
 {
   "name": "ushio",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "Get your favorite html video player in one simple html tag.",
   "peerDependencies": {
     "@angular/common": "^8.2.8",

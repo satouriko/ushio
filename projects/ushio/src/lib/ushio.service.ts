@@ -66,7 +66,7 @@ class UshioI18nProvider {
 })
 export class UshioService {
 
-  static version = '4.0.0'
+  static version = '4.1.1'
   static build = 'NG Build'
 
   // tslint:disable-next-line:max-line-length

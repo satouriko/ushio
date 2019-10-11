@@ -184,6 +184,7 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     private subscriptions;
     private mouseSubscriptions;
     private keySubscriptions;
+    private setAllControlPanelsPositionTimeout;
     private mouseMove$;
     private mouseUp$;
     private touchMove$;
