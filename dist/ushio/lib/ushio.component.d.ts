@@ -40,6 +40,7 @@ export declare class UshioComponent implements OnInit, AfterContentInit, AfterVi
     private service;
     private mInjectedStyles;
     readonly injectedStyles: import("@angular/platform-browser").SafeHtml[];
+    private viewInit;
     src: any;
     poster: any;
     crossorigin: any;

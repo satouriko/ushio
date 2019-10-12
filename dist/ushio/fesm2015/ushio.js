@@ -214,7 +214,7 @@ class UshioService {
         return splitSubtitles;
     }
 }
-UshioService.version = '4.1.2';
+UshioService.version = '4.1.3';
 UshioService.build = 'NG Build';
 UshioService.decorators = [
     { type: Injectable, args: [{
@@ -345,6 +345,7 @@ class UshioComponent {
         this.sanitization = sanitization;
         this.service = service;
         this.mInjectedStyles = [];
+        this.viewInit = false;
         this.preload = 'metadata';
         this.mSources = [];
         this.sources = [];
@@ -1506,6 +1507,7 @@ class UshioComponent {
      * @return {?}
      */
     ngAfterViewInit() {
+        this.viewInit = true;
         this.touchStart$.subscribe((/**
          * @return {?}
          */
@@ -1780,7 +1782,8 @@ class UshioComponent {
          */
         s => s.default));
         this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0;
-        this.video.nativeElement.load();
+        if (this.viewInit)
+            this.video.nativeElement.load();
     }
     /**
      * @private
@@ -2184,6 +2187,11 @@ if (false) {
      * @private
      */
     UshioComponent.prototype.mInjectedStyles;
+    /**
+     * @type {?}
+     * @private
+     */
+    UshioComponent.prototype.viewInit;
     /** @type {?} */
     UshioComponent.prototype.poster;
     /** @type {?} */

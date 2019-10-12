@@ -86,6 +86,8 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     `))
   }
 
+  private viewInit = false
+
   @Input() set src (src) {
     this.mSrc = src
     this.updateSources()
@@ -822,6 +824,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
   }
 
   ngAfterViewInit () {
+    this.viewInit = true
     this.touchStart$.subscribe(() => {
       this.interactMode = 'mobile'
     })
@@ -1012,7 +1015,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }
     const indexOfDefault = this.sources.findIndex(s => s.default)
     this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0
-    this.video.nativeElement.load()
+    if (this.viewInit) this.video.nativeElement.load()
   }
 
   private async updateSubtitles () {
