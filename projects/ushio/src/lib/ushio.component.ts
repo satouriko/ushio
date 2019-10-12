@@ -966,6 +966,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     })
   }
 
+  // https://github.com/angular/angular/issues/17404
   ngOnDestroy () {
     clearTimeout(this.setAllControlPanelsPositionTimeout)
     this.onUnfocused()
