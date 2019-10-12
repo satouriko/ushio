@@ -1012,6 +1012,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     }
     const indexOfDefault = this.sources.findIndex(s => s.default)
     this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0
+    this.video.nativeElement.load()
   }
 
   private async updateSubtitles () {

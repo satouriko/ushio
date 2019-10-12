@@ -254,7 +254,7 @@ var UshioService = /** @class */ (function () {
             splitSubtitles.push(cachedSubtitle);
         return splitSubtitles;
     };
-    UshioService.version = '4.1.1';
+    UshioService.version = '4.1.2';
     UshioService.build = 'NG Build';
     UshioService.decorators = [
         { type: Injectable, args: [{
@@ -2037,10 +2037,14 @@ var UshioComponent = /** @class */ (function () {
             }));
         }));
     };
+    // https://github.com/angular/angular/issues/17404
+    // https://github.com/angular/angular/issues/17404
     /**
      * @return {?}
      */
-    UshioComponent.prototype.ngOnDestroy = /**
+    UshioComponent.prototype.ngOnDestroy = 
+    // https://github.com/angular/angular/issues/17404
+    /**
      * @return {?}
      */
     function () {
@@ -2110,6 +2114,7 @@ var UshioComponent = /** @class */ (function () {
          */
         function (s) { return s.default; }));
         this.playingSource = indexOfDefault >= 0 ? indexOfDefault : 0;
+        this.video.nativeElement.load();
     };
     /**
      * @private
