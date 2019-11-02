@@ -10,7 +10,7 @@ npm install --save ushio
 
 And then add it to your `AppModule`:
 
-```javascript
+```typescript
 import { NgModule } from '@angular/core'
 import { BrowserModule } from '@angular/platform-browser'
 import { UshioModule } from 'ushio'
@@ -43,7 +43,7 @@ The following table lists all Ushio Component APIs.
 | `[type]` | Type of video format | string | - |
 | `[shortname]` | Short name of video source | string | 'Untitled' |
 | `[name]` | Name of video source | string | 'Untitled' |
-| `[default]` | Whether a source is the default source | boolean | - |
+| `[default]` | Whether a source is the default source | boolean | false |
 
 ### [UshioSubtitles] _[Directive]_
 
@@ -55,7 +55,7 @@ The following table lists all Ushio Component APIs.
 | `[name]` | Name of subtitles track | string | 'Untitled' |
 | `[class]` | Custom class name of subtitles track | string | '' |
 | `[srclang]` | Language code of subtitles | string | - |
-| `[default]` | Whether a subtitles track is enabled by default | false |
+| `[default]` | Whether a subtitles track is enabled by default | boolean | false |
 
 ### [UshioComponent] _[Component]_
 
@@ -64,7 +64,7 @@ The following table lists all Ushio Component APIs.
 | `[src]` | Source address of video | string | - |
 | `[poster]` | Poster URL of video | string | - |
 | `[crossorigin]` | Cross origin settings of video | string | - |
-| `[autoplay]` | Auto player settings of video | boolean | - |
+| `[autoplay]` | Autoplay settings of video | boolean | - |
 | `[preload]` | Preload settings of video | string | 'metadata' |
 | `[lang]` | Language of video player UI | string | navigator.language |
 | `[thumbnails]` | Thumbnails URL of video | string | - |
