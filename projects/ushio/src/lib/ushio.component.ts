@@ -652,7 +652,7 @@ export class UshioComponent implements OnInit, AfterContentInit, AfterViewInit, 
     })
     const mapToRate = (element, progress, total) => map(
       (moveEvent: MouseEvent | TouchEvent) => {
-        const eventCoordinate = moveEvent instanceof TouchEvent
+        const eventCoordinate = (typeof TouchEvent !== 'undefined' && moveEvent instanceof TouchEvent)
           ? moveEvent.changedTouches[0]
           : moveEvent
         const rect = element.getBoundingClientRect()
