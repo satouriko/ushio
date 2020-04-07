@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.service.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
@@ -282,6 +283,7 @@ if (false) {
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.component.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 var UshioSource = /** @class */ (function () {
@@ -1548,7 +1550,7 @@ var UshioComponent = /** @class */ (function () {
          */
         function (moveEvent) {
             /** @type {?} */
-            var eventCoordinate = moveEvent instanceof TouchEvent
+            var eventCoordinate = (typeof TouchEvent !== 'undefined' && moveEvent instanceof TouchEvent)
                 ? moveEvent.changedTouches[0]
                 : moveEvent;
             /** @type {?} */
@@ -3008,6 +3010,7 @@ if (false) {
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.module.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 var UshioModule = /** @class */ (function () {
@@ -3035,11 +3038,13 @@ var UshioModule = /** @class */ (function () {
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: public-api.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: ushio.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 

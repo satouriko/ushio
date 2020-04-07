@@ -2,7 +2,7 @@
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@angular/core'), require('@angular/platform-browser'), require('rxjs'), require('rxjs/operators'), require('@angular/common')) :
     typeof define === 'function' && define.amd ? define('ushio', ['exports', '@angular/core', '@angular/platform-browser', 'rxjs', 'rxjs/operators', '@angular/common'], factory) :
     (global = global || self, factory(global.ushio = {}, global.ng.core, global.ng.platformBrowser, global.rxjs, global.rxjs.operators, global.ng.common));
-}(this, function (exports, core, platformBrowser, rxjs, operators, common) { 'use strict';
+}(this, (function (exports, core, platformBrowser, rxjs, operators, common) { 'use strict';
 
     /*! *****************************************************************************
     Copyright (c) Microsoft Corporation. All rights reserved.
@@ -72,10 +72,11 @@
     }
 
     function __awaiter(thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
         return new (P || (P = Promise))(function (resolve, reject) {
             function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
             function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-            function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
             step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     }
@@ -113,14 +114,15 @@
     }
 
     function __values(o) {
-        var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
         if (m) return m.call(o);
-        return {
+        if (o && typeof o.length === "number") return {
             next: function () {
                 if (o && i >= o.length) o = void 0;
                 return { value: o && o[i++], done: !o };
             }
         };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
     }
 
     function __read(o, n) {
@@ -201,8 +203,24 @@
         return (mod && mod.__esModule) ? mod : { default: mod };
     }
 
+    function __classPrivateFieldGet(receiver, privateMap) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to get private field on non-instance");
+        }
+        return privateMap.get(receiver);
+    }
+
+    function __classPrivateFieldSet(receiver, privateMap, value) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to set private field on non-instance");
+        }
+        privateMap.set(receiver, value);
+        return value;
+    }
+
     /**
      * @fileoverview added by tsickle
+     * Generated from: lib/ushio.service.ts
      * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
      */
     /**
@@ -478,6 +496,7 @@
 
     /**
      * @fileoverview added by tsickle
+     * Generated from: lib/ushio.component.ts
      * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
      */
     var UshioSource = /** @class */ (function () {
@@ -1744,7 +1763,7 @@
              */
             function (moveEvent) {
                 /** @type {?} */
-                var eventCoordinate = moveEvent instanceof TouchEvent
+                var eventCoordinate = (typeof TouchEvent !== 'undefined' && moveEvent instanceof TouchEvent)
                     ? moveEvent.changedTouches[0]
                     : moveEvent;
                 /** @type {?} */
@@ -3204,6 +3223,7 @@
 
     /**
      * @fileoverview added by tsickle
+     * Generated from: lib/ushio.module.ts
      * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
      */
     var UshioModule = /** @class */ (function () {
@@ -3237,5 +3257,5 @@
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
-}));
+})));
 //# sourceMappingURL=ushio.umd.js.map

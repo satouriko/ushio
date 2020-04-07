@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.service.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
@@ -240,6 +241,7 @@ if (false) {
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.component.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 class UshioSource {
@@ -1233,7 +1235,7 @@ class UshioComponent {
          */
         (moveEvent) => {
             /** @type {?} */
-            const eventCoordinate = moveEvent instanceof TouchEvent
+            const eventCoordinate = (typeof TouchEvent !== 'undefined' && moveEvent instanceof TouchEvent)
                 ? moveEvent.changedTouches[0]
                 : moveEvent;
             /** @type {?} */
@@ -1790,7 +1792,7 @@ class UshioComponent {
      * @return {?}
      */
     updateSubtitles() {
-        return __awaiter(this, void 0, void 0, /** @this {!UshioComponent} */ function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             /** @type {?} */
             const parsedSubtitles = [];
             for (const sub of this.mSubtitles) {
@@ -2574,6 +2576,7 @@ if (false) {
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: lib/ushio.module.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 class UshioModule {
@@ -2598,11 +2601,13 @@ UshioModule.decorators = [
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: public-api.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 
 /**
  * @fileoverview added by tsickle
+ * Generated from: ushio.ts
  * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 
