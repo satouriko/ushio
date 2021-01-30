@@ -3,15 +3,15 @@
 Use tag `ushio-subtitles` for subtitles.
 
 ```html
-<ushio-player lang="zh-Hans" src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪ .mp4">
+<ushio-player lang="zh-Hans" src="https://cdn.innocent.love/ときめきポポロン♪ .mp4">
   <ushio-subtitles
-   src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - subtitle.srt"
+   src="https://cdn.innocent.love/ときめきポポロン♪  - subtitle.srt"
    name="字幕"
    type="application/x-subrip"
    default
   ></ushio-subtitles>
   <ushio-subtitles
-    src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - caption.srt"
+    src="https://cdn.innocent.love/ときめきポポロン♪  - caption.srt"
     name="歌手"
     type="application/x-subrip"
     default
@@ -22,15 +22,15 @@ Use tag `ushio-subtitles` for subtitles.
 The above code renders as follows.
 
 <div class="video-wrap">
-<ushio-player lang="zh-Hans" src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪ .mp4">
+<ushio-player lang="zh-Hans" src="https://cdn.innocent.love/ときめきポポロン♪ .mp4">
   <ushio-subtitles
-   src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - subtitle.srt"
+   src="https://cdn.innocent.love/ときめきポポロン♪  - subtitle.srt"
    name="字幕"
    type="application/x-subrip"
    default
   ></ushio-subtitles>
   <ushio-subtitles
-     src="https://tokimekiwakuwaku.netlify.com/ときめきポポロン♪  - caption.srt"
+     src="https://cdn.innocent.love/ときめきポポロン♪  - caption.srt"
      name="歌手"
      type="application/x-subrip"
      default

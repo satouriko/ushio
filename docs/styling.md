@@ -7,20 +7,20 @@ You can use `<style>` tag to inject CSS into Shadow DOM.
 For example, override subtitles layout.
 
 ```html
-<ushio-player lang="zh-Hans" src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの.mp4">
+<ushio-player lang="zh-Hans" src="https://cdn.innocent.love/夜空はなんでも知ってるの.mp4">
   <style>
     .ushio-player-subtitle-container {
       justify-content: space-between !important;
     }
   </style>
   <ushio-subtitles
-   src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - subtitle.srt"
+   src="https://cdn.innocent.love/夜空はなんでも知ってるの - subtitle.srt"
    name="字幕"
    type="application/x-subrip"
    default
   ></ushio-subtitles>
   <ushio-subtitles
-    src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - caption.srt"
+    src="https://cdn.innocent.love/夜空はなんでも知ってるの - caption.srt"
     name="歌手"
     type="application/x-subrip"
     default
@@ -29,20 +29,20 @@ For example, override subtitles layout.
 ```
 
 <div class="video-wrap">
-<ushio-player lang="zh-Hans" src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの.mp4">
+<ushio-player lang="zh-Hans" src="https://cdn.innocent.love/夜空はなんでも知ってるの.mp4">
   <style>
     .ushio-player-subtitle-container {
       justify-content: space-between !important;
     }
   </style>
   <ushio-subtitles
-   src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - subtitle.srt"
+   src="https://cdn.innocent.love/夜空はなんでも知ってるの - subtitle.srt"
    name="字幕"
    type="application/x-subrip"
    default
   ></ushio-subtitles>
   <ushio-subtitles
-    src="https://tokimekiwakuwaku.netlify.com/夜空はなんでも知ってるの - caption.srt"
+    src="https://cdn.innocent.love/夜空はなんでも知ってるの - caption.srt"
     name="歌手"
     type="application/x-subrip"
     default
