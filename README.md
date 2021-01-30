@@ -16,7 +16,7 @@ Why Ushio?
 
 Ushio is created for mainly the following needs:
 
-1. Switch sources. You can provided a few sources to one video, and users
+1. Switch sources. You can provide a few sources to one video, and users
 are able to switch between them via a menu. This is typically used for
 switching video quality.
 
@@ -25,7 +25,7 @@ in your video, at the same time. Users also have the choice to decide which
 track to use. Both SRT and WebVTT format are supported.
 
 3. Responsive design. Ushio is not bad on interact experience when you use your
-finger instead a mouse. You can use this player in your responsive website,
+finger instead of a mouse. You can use this player in your responsive website,
 like your blog ;)
 
 4. Extensible. Injecting stylesheets is super easy. This player meets your need
